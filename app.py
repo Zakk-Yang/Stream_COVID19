@@ -148,6 +148,7 @@ def main():
         div = Div(text=html)
         st.bokeh_chart(div)
 
+
     st.sidebar.info('Contact: zakkyang@hotmail.com')
 
 # image = Image.open('sample.jpeg')

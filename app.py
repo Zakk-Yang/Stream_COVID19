@@ -8,7 +8,8 @@ import copy
 
 def main():
     latest = latest_date
-    d=1
+    a=1
+    b=1+a
 
     df = copy.deepcopy(new_df)
 

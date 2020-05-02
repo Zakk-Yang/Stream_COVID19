@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/Stream_COVID19.iml" filepath="$PROJECT_DIR$/.idea/Stream_COVID19.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Streamlit_Tutorial/.idea/Streamlit_Tutorial.iml" filepath="$PROJECT_DIR$/../Streamlit_Tutorial/.idea/Streamlit_Tutorial.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../heroku_test/.idea/heroku_test.iml" filepath="$PROJECT_DIR$/../heroku_test/.idea/heroku_test.iml" />
+    </modules>
+  </component>
+</project>

@@ -59,7 +59,7 @@ def gen_map(df):
 st.write(gen_map(df))
 
 # area plot
-st.title('Trend Plot')
+st.title('Time Series Plot')
 country_selector_df = df.groupby(['country', 'dt_time', 'status'])['count'].agg('sum').reset_index()
 top_n = st.number_input('Select top N Highest Confirmed Case Country', value=5, min_value = 1,  max_value=10)
 top_n_country = list(

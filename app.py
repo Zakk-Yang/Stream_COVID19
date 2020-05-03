@@ -83,9 +83,6 @@ st.markdown(dictcountry)
 country_selector = st.multiselect('Select Country', list(df.country.unique()), ['US', 'United Kingdom'])
 @st.cache(allow_output_mutation=True)
 def area_plot(country_selector, country_selector_df):
-    #     def Union(lst1, lst2):
-    #         final_list = list(set().union(lst1, lst2))
-    #         return final_list
     if country_selector:
         if country_selector is None:
             None
@@ -109,8 +106,8 @@ if st.sidebar.checkbox("Show Raw Data"):
     con1 = df['status'] == status_selector
     con2 = df['dt_time'] == pd.to_datetime(date_selector)
     data_source = df.loc[con1 & con2]
+    data_source.dt_time = pd.to_datetime(data_source.dt_time, format = '%Y%m%d')
     st.write(data_source)
-
 
 # layout customization
 def _set_block_container_style(
@@ -174,6 +171,3 @@ st.sidebar.warning(
 
 st.sidebar.info('Contact: zakkyang@hotmail.com')
 
-# image = Image.open('sample.jpeg')
-# st.image(image, caption='Sunrise by the mountains',
-#          use_column_width=True)

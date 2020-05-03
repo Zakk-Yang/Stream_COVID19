@@ -8,7 +8,12 @@ import copy
 
 latest = latest_date
 
-df = copy.deepcopy(new_df)
+@st.cache
+def load_dataframe():
+    df = copy.deepcopy(new_df)
+    return df
+
+df = load_dataframe()
 
 st.title('COVID-19 Visualization')
 st.text(f"updated by {latest.date()}")

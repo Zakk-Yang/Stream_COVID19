@@ -33,7 +33,7 @@ st.title('Map Plot')
 date_selector = st.date_input('Select A Date', max(df['dt_time']))
 status_selector = st.selectbox('Select Status', list(df.status.unique()))
 
-# @st.cache
+@st.cache
 def gen_map(df):
     global date_selector  # for the use in data source table
     global status_selector  # for the use in data source table
@@ -67,7 +67,7 @@ top_n_country = list(
         top_n))
 country_selector = st.multiselect('Select Country', list(df.country.unique()), top_n_country)
 
-# @st.cache
+@st.cache
 def area_plot(country_selector_df):
     def Union(lst1, lst2):
         final_list = list(set().union(lst1, lst2))

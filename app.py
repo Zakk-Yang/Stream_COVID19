@@ -67,7 +67,7 @@ top_n_country = list(
         top_n))
 country_selector = st.multiselect('Select Country', list(df.country.unique()), top_n_country)
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def area_plot(country_selector_df):
     def Union(lst1, lst2):
         final_list = list(set().union(lst1, lst2))

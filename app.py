@@ -147,6 +147,15 @@ if st.sidebar.button('LinkedIn'):
     div = Div(text=html)
     st.bokeh_chart(div)
 
+st.sidebar.markdown('### Following Plans to Update:')
+st.sidebar.warning('🎯  Normalize the time series plot for better apple-to-apple comparison')
+st.sidebar.warning('🎯  Add per million population into map and time series plot')
+st.sidebar.warning('🎯  Add animation to plot the time series developing trend ')
+st.sidebar.warning('🎯  Predict when the COVID will end using time series ML tool')
+st.sidebar.warning('🎯  Improve the sidebar function')
+st.sidebar.warning('🎯  Using NLP to anaylize the sentiment on COVID-19 -- whether we are gaining more confidence than yesterday in Twitter when tagging the COVID keyword')
+
+
 
 st.sidebar.info('Contact: zakkyang@hotmail.com')
 

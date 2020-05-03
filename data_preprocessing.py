@@ -9,6 +9,7 @@ warnings.filterwarnings('ignore')
 country_gps_list = pd.read_csv('country_gps.csv')
 country_gps_list.columns = ['country_iso_2', 'latitude', 'longitude', 'country']
 country_gps_list.replace('United States', 'US', inplace=True)
+country_gps_list.country = country_gps_list.country.str.strip()
 
 # ---------------------------reading data----------------------------------------------------
 def file_opener(url):

@@ -4,7 +4,5 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="jdk" jdkName="Python 3.7 (Streamlit_Tutorial)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="Streamlit_Tutorial" />
-    <orderEntry type="module" module-name="heroku_test" />
   </component>
 </module>

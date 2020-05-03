@@ -103,7 +103,7 @@ def _set_block_container_style(
         padding_top: int = 5,
         padding_right: int = 1,
         padding_left: int = 1,
-        padding_bottom: int = 0,
+        padding_bottom: int = 2,
 ):
     if max_width_100_percent:
         max_width_str = f"max-width: 100%;"

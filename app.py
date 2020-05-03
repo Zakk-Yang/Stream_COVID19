@@ -33,7 +33,7 @@ st.title('Map Plot')
 date_selector = st.date_input('Select A Date', max(df['dt_time']))
 status_selector = st.selectbox('Select Status', list(df.status.unique()))
 
-@st.cache(persist=True)
+@st.cache(persist=True, allow_output_mutation=True)
 def gen_map(df):
     global date_selector  # for the use in data source table
     global status_selector  # for the use in data source table

@@ -9,7 +9,7 @@ import numpy as np
 
 latest = latest_date
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def load_dataframe():
     df = copy.deepcopy(new_df)
     return df
@@ -51,7 +51,6 @@ def gen_map(df):
     # create map
     MBToken = 'pk.eyJ1Ijoic2NvaGVuZGUiLCJhIjoiY2szemMxczZoMXJhajNrcGRsM3cxdGdibiJ9.2oazpPgLvgJGF9EBOYa9Wg'
     px.set_mapbox_access_token(MBToken)
-    df.dropna(inplace=True)
     con1 = df['status'] == status_selector
     con2 = df['dt_time'] == pd.to_datetime(date_selector)
     dff = df.loc[con1 & con2]

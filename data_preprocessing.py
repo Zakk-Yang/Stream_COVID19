@@ -1,15 +1,16 @@
 # ---------------------------loading packages---------------------------------------------------
 import pandas as pd
 import warnings
+import numpy as np
 
 warnings.filterwarnings('ignore')
 
 # ---------------------------loading local files---------------------------------------------
 
-country_gps_list = pd.read_csv('country_gps.csv')
-country_gps_list.columns = ['country_iso_2', 'latitude', 'longitude', 'country']
-country_gps_list.replace('United States', 'US', inplace=True)
-country_gps_list.country = country_gps_list.country.str.strip()
+# country_gps_list = pd.read_csv('country_gps.csv')
+# country_gps_list.columns = ['country_iso_2', 'latitude', 'longitude', 'country']
+# country_gps_list.replace('United States', 'US', inplace=True)
+# country_gps_list.country = country_gps_list.country.str.strip()
 
 # ---------------------------reading data----------------------------------------------------
 def file_opener(url):
@@ -36,19 +37,17 @@ recovered = file_opener(url)
 
 def data_cleaning(df, status):
     # retrieve only necessary columns
-    dim_col = ['Country/Region', 'Region Name', 'ISO 3166-1 Alpha 3-Codes']
-    latest_col_id = df.loc[:, :'ISO 3166-1 Alpha 3-Codes'].shape[1] - 1
-    metric_df = df.iloc[:, 4: -7]
-    metric_col = list(metric_df.columns)
-    c = df[dim_col + metric_col]
-    c['status'] = status
-    dim_col.append('status')
-    d = c.groupby(dim_col)[metric_col].agg('sum').reset_index()
-    d.dropna(inplace=True)
-    d.rename(columns={'Country/Region': 'country', 'Region Name': 'region',
-                      'ISO 3166-1 Alpha 3-Codes': 'iso_alpha'}, inplace=True)
-    e = pd.merge(d, country_gps_list, how='left', left_on='country', right_on='country')
-    return e
+    df['country'] = np.where(df['Province/State'].notna(), df['Country/Region'] + '-' + df['Province/State'], df['Country/Region'])
+    dim_col = ['country','Region Name', 'Lat', 'Long','ISO 3166-1 Alpha 3-Codes']
+    metric_col = list(df.columns)[4:-7]
+    df = df[dim_col + metric_col]
+    df['status'] = status
+    df.dropna(inplace=True)
+    df.rename(columns={'Region Name': 'region',
+                      'ISO 3166-1 Alpha 3-Codes': 'iso_alpha',
+                      'Lat': 'latitude',
+                      'Long': 'longitude'}, inplace=True)
+    return df
 
 
 confirmed_df = data_cleaning(confirmed, 'confirmed')
@@ -58,10 +57,10 @@ df = pd.concat([confirmed_df, death_df, recovered_df], axis=0)
 
 # pivot datetime
 date_col = df.columns[4:].to_list()
-unwanted_date_col = {'country_iso_2', 'latitude', 'longitude'}
+unwanted_date_col = {'iso_alpha', 'status'}
 date_col = [date for date in date_col if date not in unwanted_date_col]
 dim_col = df.columns[:4].to_list()
-add_list = ['latitude', 'longitude']
+add_list = ['status']
 dim_col = dim_col + add_list
 df = pd.melt(df, id_vars=dim_col, value_vars=date_col, var_name='dt_time', value_name='count')
 df['dt_time'] = pd.to_datetime(df['dt_time'])

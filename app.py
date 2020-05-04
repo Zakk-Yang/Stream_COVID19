@@ -12,6 +12,7 @@ latest = latest_date
 @st.cache(allow_output_mutation=True)
 def load_dataframe():
     df = copy.deepcopy(new_df)
+    df.dropna(inplace=True)
     return df
 
 

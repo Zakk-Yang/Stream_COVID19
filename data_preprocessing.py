@@ -76,6 +76,12 @@ new_df['active'] = new_df['confirmed'] -  new_df['recovered']
 new_df = new_df.melt(id_vars=new_dim, value_vars= ['confirmed', 'active', 'recovered', 'death'], value_name='count')
 
 
+# calculate the increase rate
+dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'dt_time', 'status']
+new_df.sort_values(by=dim, inplace=True)
+new_df['diff_change'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
+
+
 # import population data
 world_pop = pd.read_csv('world_population.csv')
 new_df = pd.merge(new_df, world_pop, how = 'left', left_on = 'iso_alpha', right_on= 'Country Code')
@@ -90,10 +96,7 @@ new_df.rename(columns= {'population_y':'population'}, inplace=True)
 new_df['per_mil_count'] = new_df['count']/new_df['population']
 new_df.fillna(0, inplace=True)
 
-# calculate the increase rate
-dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'dt_time', 'status']
-new_df.sort_values(by=dim, inplace=True)
-new_df['diff_change'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
+
 
 #retrieve the latest date
 latest_date = max(new_df.dt_time)

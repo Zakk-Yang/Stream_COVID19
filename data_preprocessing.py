@@ -12,6 +12,7 @@ warnings.filterwarnings('ignore')
 # country_gps_list.replace('United States', 'US', inplace=True)
 # country_gps_list.country = country_gps_list.country.str.strip()
 
+
 # ---------------------------reading data----------------------------------------------------
 def file_opener(url):
     import pandas as pd
@@ -39,7 +40,7 @@ def data_cleaning(df, status):
     # retrieve only necessary columns
     df['country'] = np.where(df['Province/State'].notna(), df['Country/Region'] + '-' + df['Province/State'], df['Country/Region'])
     dim_col = ['country','Region Name', 'Lat', 'Long','ISO 3166-1 Alpha 3-Codes']
-    metric_col = list(df.columns)[4:-7]
+    metric_col = list(df.columns)[4:-8]
     df = df[dim_col + metric_col]
     df['status'] = status
     df.dropna(inplace=True)
@@ -60,7 +61,7 @@ date_col = df.columns[4:].to_list()
 unwanted_date_col = {'iso_alpha', 'status'}
 date_col = [date for date in date_col if date not in unwanted_date_col]
 dim_col = df.columns[:4].to_list()
-add_list = ['status']
+add_list = ['status', 'iso_alpha']
 dim_col = dim_col + add_list
 df = pd.melt(df, id_vars=dim_col, value_vars=date_col, var_name='dt_time', value_name='count')
 df['dt_time'] = pd.to_datetime(df['dt_time'])
@@ -73,6 +74,26 @@ new_dim.remove('status')
 new_df = pd.pivot_table(df, index = new_dim, columns = 'status', values= 'count').reset_index()
 new_df['active'] = new_df['confirmed'] -  new_df['recovered']
 new_df = new_df.melt(id_vars=new_dim, value_vars= ['confirmed', 'active', 'recovered', 'death'], value_name='count')
+
+
+# import population data
+world_pop = pd.read_csv('world_population.csv')
+new_df = pd.merge(new_df, world_pop, how = 'left', left_on = 'iso_alpha', right_on= 'Country Code')
+
+# import china population and calculate the per million number
+china_pop = pd.read_csv('china_population.csv')
+new_df.country = new_df.country.str.replace('China-', '').str.strip()
+new_df = pd.merge(new_df, china_pop, how= 'left', left_on= 'country', right_on = 'province')
+new_df.population_y = new_df.population_y.fillna(new_df.population_x)
+new_df.drop(columns = ['population_x', 'province'], inplace=True)
+new_df.rename(columns= {'population_y':'population'}, inplace=True)
+new_df['per_mil_count'] = new_df['count']/new_df['population']
+new_df.fillna(0, inplace=True)
+
+# calculate the increase rate
+dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'dt_time', 'status']
+new_df.sort_values(by=dim, inplace=True)
+new_df['diff_change'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
 
 #retrieve the latest date
 latest_date = max(new_df.dt_time)

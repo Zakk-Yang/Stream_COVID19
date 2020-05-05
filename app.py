@@ -218,8 +218,8 @@ def area_plot(country_selector, country_selector_df):
 st.write(area_plot(country_selector, country_selector_df))
 
 # Daily Change Lineplot
-st.markdown('### Daily Increase Trend')
-country_selector_single = st.selectbox('Select A Country ', list(df_.country.unique()))
+# st.markdown('### Daily Increase Trend')
+# country_selector_single = st.selectbox('Select A Country ', list(df_.country.unique()))
 
 # def change_pct_line(df):
 #     con1 = df.country == country_selector_single

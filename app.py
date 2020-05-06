@@ -216,6 +216,24 @@ def area_plot(country_selector, country_selector_df):
 st.write(area_plot(country_selector, country_selector_df))
 
 
+
+# # animation plot
+# top_n_country = list(
+#     df_.sort_values(by='count', ascending=False).drop_duplicates(subset='Country Name')['Country Name'].head(
+#         10))
+# df_['month_date'] = df_['dt_time'].dt.strftime("%y/%m/%d")
+# dff = df_.groupby(['Country Name', 'status', 'month_date'])['count'].agg('sum').reset_index()
+# con1 = df_['Country Name'].isin(top_n_country)
+# con2 = df_['status'] == status_selector
+# dff = df_.loc[con1 & con2]
+# dff.sort_values(by=['month_date', 'count'], ascending=True, inplace=True)
+# if status_selector:
+#     st.write(px.bar(dff, x="count", y="Country Name", animation_frame="month_date", animation_group="Country Name",
+#              hover_name="Country Name", width= 1000, height = 1200, orientation='h'))
+
+
+
+
 # animation plot
 @st.cache
 def get_hbar_data(df_):
@@ -235,7 +253,7 @@ st.markdown('###  Racing Bar Chart-- View the developing animation! ')
 st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!" )
 if status_selector:
     st.write(px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color = 'region',
-             hover_name="country", width= 800, height = 800, orientation='h', template= 'none'))
+             hover_name="country", width= 800, height = 800, orientation='h'))
 
 
 

@@ -1,4 +1,5 @@
 from datetime import timedelta
+import datetime
 import streamlit as st
 import plotly.express as px
 import requests
@@ -94,11 +95,17 @@ url3 = 'https://data.humdata.org/hxlproxy/data/download/time_series_covid19_reco
 
 df_ = load_data(url1, url2, url3)
 
+
 # retrieve the latest date
 latest_date = max(df_.dt_time)
 
+# ---------------------------start page----------------------------------------------------
+
+
 if st.button("What's New"):
-    st.markdown("2020-5-5: Per million population case updated in the map plot!")
+    st.success("2020-5-5: Per million population case updated in the map plot!")
+    st.success("2020-5-6: Animation added and improved the loading performance!")
+
 
 st.title('COVID-19 Visualization')
 st.text(f"updated by {latest_date.date()}")
@@ -123,12 +130,19 @@ st.header('Map Plot')
 # graphs
 # create selector for map
 date_selector = st.date_input('Select A Date', max(df_['dt_time']))
-status_selector = st.selectbox('Select A Status', list(df_.status.unique()))
+st.sidebar.markdown('### Widgets')
+status_selector = st.sidebar.selectbox('Select A Status', list(df_.status.unique()))
+
+st.info('1. Select a status on the sidebar')
+st.info('2. 🔎 Zoom in or drag to move; select a status on the sidebar')
+
+
+# --------------------------- Plot Section ----------------------------------------------------
+
+# @st.cache(persist=True, allow_output_mutation=True)
+st.markdown(f'### Current status selected: [{status_selector}]')
 per_mil = st.checkbox('Per Million Cases (excluding population<1 million)')
-
-st.success('🔎 Zoom in or drag to move')
-
-
+@st.cache
 def gen_map(df):
     # create map
     MBToken = 'pk.eyJ1Ijoic2NvaGVuZGUiLCJhIjoiY2szemMxczZoMXJhajNrcGRsM3cxdGdibiJ9.2oazpPgLvgJGF9EBOYa9Wg'
@@ -149,7 +163,7 @@ def gen_map(df):
         fig1.update_layout(margin=dict(l=0, r=100, t=0), showlegend=False)
         return fig1
 
-    if date_selector <= ax.dt_time.max() and date_selector >= ax.dt_time.min():
+    elif date_selector <= ax.dt_time.max() and date_selector >= ax.dt_time.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0.6,
                                  width=1000,
@@ -160,10 +174,12 @@ def gen_map(df):
         fig2.update_layout(margin=dict(l=0, r=100), showlegend=False)
         return fig2
 
+    else:
+        st.write('Please select a valid date.')
+
 
 st.write(gen_map(df_))
 
-# area plot
 st.header('Time Series Visualization')
 st.markdown('### Status Area Plot')
 country_selector_df = df_.groupby(['country', 'dt_time', 'status'])['count'].agg('sum').reset_index()
@@ -176,7 +192,6 @@ ziprank = zip(country_rank, top_n_country)
 dictcountry = dict(ziprank)
 st.markdown(dictcountry)
 country_selector = st.multiselect('Select Country', list(df_.country.unique()), ['US', 'United Kingdom'])
-
 
 # area plot
 def area_plot(country_selector, country_selector_df):
@@ -199,6 +214,49 @@ def area_plot(country_selector, country_selector_df):
 
 
 st.write(area_plot(country_selector, country_selector_df))
+
+
+
+# # animation plot
+# top_n_country = list(
+#     df_.sort_values(by='count', ascending=False).drop_duplicates(subset='Country Name')['Country Name'].head(
+#         10))
+# df_['month_date'] = df_['dt_time'].dt.strftime("%y/%m/%d")
+# dff = df_.groupby(['Country Name', 'status', 'month_date'])['count'].agg('sum').reset_index()
+# con1 = df_['Country Name'].isin(top_n_country)
+# con2 = df_['status'] == status_selector
+# dff = df_.loc[con1 & con2]
+# dff.sort_values(by=['month_date', 'count'], ascending=True, inplace=True)
+# if status_selector:
+#     st.write(px.bar(dff, x="count", y="Country Name", animation_frame="month_date", animation_group="Country Name",
+#              hover_name="Country Name", width= 1000, height = 1200, orientation='h'))
+
+
+
+
+# animation plot
+@st.cache
+def get_hbar_data(df_):
+    top_n_country = list(
+        df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
+            15))
+    df_['month_date'] = df_['dt_time'].dt.strftime("%y/%m/%d")
+    con1 = df_['country'].isin(top_n_country)
+    con2 = df_['status'] == status_selector
+    con3 = df_['month_date'] >= '20/02/25'
+    dff = df_.loc[con1 & con2 & con3]
+    dff.sort_values(by=['dt_time', 'count'], ascending=True, inplace=True)
+    return dff
+
+dff = get_hbar_data(df_)
+
+st.markdown('###  Racing Bar Chart-- View the developing animation! ')
+st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!" )
+if status_selector:
+    st.write(px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color = 'region',
+             hover_name="country", width= 800, height = 800, orientation='h'))
+
+
 
 # Daily Change Lineplot
 # st.markdown('### Daily Increase Trend')

@@ -8,83 +8,97 @@ from bokeh.models.widgets import Div
 import pandas as pd
 import warnings
 import numpy as np
+
 warnings.filterwarnings('ignore')
 
+config = {'modeBarButtonsToRemove': ['pan2d', 'select2d', 'lasso2d', 'zoomOut2d', 'zoomIn2d', 'hoverClosestCartesian',
+                                     'zoom2d', 'autoScale2d', 'hoverCompareCartesian', 'zoomInGeo', 'zoomOutGeo',
+                                     'hoverClosestGeo', 'hoverClosestGl2d', 'toggleHover',
+                                     'zoomInMapbox', 'zoomOutMapbox', 'toggleSpikelines'],
+          'displaylogo': False}
 
 # ---------------------------reading data----------------------------------------------------
 @st.cache(allow_output_mutation=True)
 def load_data(url1, url2, url3):
-        r1 = requests.get(url1).content
-        confirmed = pd.read_csv(io.StringIO(r1.decode('utf-8')), skiprows=[1, 1])
-        r2 = requests.get(url2).content
-        death = pd.read_csv(io.StringIO(r2.decode('utf-8')), skiprows=[1, 1])
-        r3 = requests.get(url3).content
-        recovered = pd.read_csv(io.StringIO(r3.decode('utf-8')), skiprows=[1, 1])
+    r1 = requests.get(url1).content
+    confirmed = pd.read_csv(io.StringIO(r1.decode('utf-8')), skiprows=[1, 1])
+    r2 = requests.get(url2).content
+    death = pd.read_csv(io.StringIO(r2.decode('utf-8')), skiprows=[1, 1])
+    r3 = requests.get(url3).content
+    recovered = pd.read_csv(io.StringIO(r3.decode('utf-8')), skiprows=[1, 1])
 
-        def data_cleaning(df, status):
-            # retrieve only necessary columns
-            df['country'] = np.where(df['Province/State'].notna(), df['Country/Region'] + '-' + df['Province/State'],
-                                     df['Country/Region'])
-            dim_col = ['country', 'Region Name', 'Lat', 'Long', 'ISO 3166-1 Alpha 3-Codes']
-            metric_col = list(df.columns)[4:-8]
-            df = df[dim_col + metric_col]
-            df['status'] = status
-            df.dropna(inplace=True)
-            df.rename(columns={'Region Name': 'region',
-                               'ISO 3166-1 Alpha 3-Codes': 'iso_alpha',
-                               'Lat': 'latitude',
-                               'Long': 'longitude'}, inplace=True)
-            return df
+    def data_cleaning(df, status):
+        # retrieve only necessary columns
+        df['country'] = np.where(df['Province/State'].notna(), df['Country/Region'] + '-' + df['Province/State'],
+                                 df['Country/Region'])
+        dim_col = ['country', 'Region Name', 'Lat', 'Long', 'ISO 3166-1 Alpha 3-Codes']
+        metric_col = list(df.columns)[4:-8]
+        df = df[dim_col + metric_col]
+        df['status'] = status
+        df.dropna(inplace=True)
+        df.rename(columns={'Region Name': 'region',
+                           'ISO 3166-1 Alpha 3-Codes': 'iso_alpha',
+                           'Lat': 'latitude',
+                           'Long': 'longitude'}, inplace=True)
+        return df
 
-        confirmed_df = data_cleaning(confirmed, 'confirmed')
-        death_df = data_cleaning(death, 'death')
-        recovered_df = data_cleaning(recovered, 'recovered')
-        concat_data = pd.concat([confirmed_df, death_df, recovered_df], axis=0)
+    confirmed_df = data_cleaning(confirmed, 'confirmed')
+    death_df = data_cleaning(death, 'death')
+    recovered_df = data_cleaning(recovered, 'recovered')
+    concat_data = pd.concat([confirmed_df, death_df, recovered_df], axis=0)
 
+    def feature_engineering(df):
+        # pivot datetime
+        date_col = df.columns[4:].to_list()
+        date_col.remove('iso_alpha')
+        date_col.remove('status')
+        dim_col = df.columns[:4].to_list()
+        add_list = ['status', 'iso_alpha']
+        dim_col = dim_col + add_list
+        df = pd.melt(df, id_vars=dim_col, value_vars=date_col, var_name='dt_time', value_name='count')
+        df['dt_time'] = pd.to_datetime(df['dt_time'])
 
-        def feature_engineering(df):
-            # pivot datetime
-            date_col = df.columns[4:].to_list()
-            date_col.remove('iso_alpha')
-            date_col.remove('status')
-            dim_col = df.columns[:4].to_list()
-            add_list = ['status', 'iso_alpha']
-            dim_col = dim_col + add_list
-            df = pd.melt(df, id_vars=dim_col, value_vars=date_col, var_name='dt_time', value_name='count')
-            df['dt_time'] = pd.to_datetime(df['dt_time'])
+        # calculate active cases
+        new_dim = list(df.columns)
+        new_dim.remove('count')
+        new_dim.remove('status')
+        new_df = pd.pivot_table(df, index=new_dim, columns='status', values='count').reset_index()
+        new_df['active'] = new_df['confirmed'] - new_df['recovered']
+        new_df = new_df.melt(id_vars=new_dim, value_vars=['confirmed', 'active', 'recovered', 'death'],
+                             value_name='count')
 
-            # calculate active cases
-            new_dim = list(df.columns)
-            new_dim.remove('count')
-            new_dim.remove('status')
-            new_df = pd.pivot_table(df, index=new_dim, columns='status', values='count').reset_index()
-            new_df['active'] = new_df['confirmed'] - new_df['recovered']
-            new_df = new_df.melt(id_vars=new_dim, value_vars=['confirmed', 'active', 'recovered', 'death'], value_name='count')
+        # calculate the increase rate and diff
+        dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'dt_time', 'status']
+        new_df.sort_values(by=dim, inplace=True)
+        new_df['Daily Change%'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
+        new_df['Daily Case Change'] = new_df.groupby(['country', 'status'])['count'].transform(lambda x: x.diff())
 
-            # calculate the increase rate and diff
-            dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'dt_time', 'status']
-            new_df.sort_values(by=dim, inplace=True)
-            new_df['diff_change'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
-            new_df['diff_daily'] = new_df.groupby(['country', 'status'])['count'].transform(lambda x: x.diff())
+        # import population data
+        world_pop = pd.read_csv('world_population.csv')
+        new_df = pd.merge(new_df, world_pop, how='left', left_on='iso_alpha', right_on='Country Code')
 
+        # import china population and calculate the per million number
+        china_pop = pd.read_csv('china_population.csv')
+        new_df.country = new_df.country.str.replace('China-', '').str.strip()
+        new_df = pd.merge(new_df, china_pop, how='left', left_on='country', right_on='province')
+        new_df.population_y = new_df.population_y.fillna(new_df.population_x)
+        new_df.drop(columns=['population_x', 'province'], inplace=True)
+        new_df.rename(columns={'population_y': 'population'}, inplace=True)
+        new_df['per_mil_count'] = round(new_df['count'] / new_df['population'])
+        new_df = new_df.fillna(0).sort_values(by=['country', 'status', 'dt_time'])
+        return new_df
 
-            # import population data
-            world_pop = pd.read_csv('world_population.csv')
-            new_df = pd.merge(new_df, world_pop, how='left', left_on='iso_alpha', right_on='Country Code')
+    new_df = feature_engineering(concat_data)
 
-            # import china population and calculate the per million number
-            china_pop = pd.read_csv('china_population.csv')
-            new_df.country = new_df.country.str.replace('China-', '').str.strip()
-            new_df = pd.merge(new_df, china_pop, how='left', left_on='country', right_on='province')
-            new_df.population_y = new_df.population_y.fillna(new_df.population_x)
-            new_df.drop(columns=['population_x', 'province'], inplace=True)
-            new_df.rename(columns={'population_y': 'population'}, inplace=True)
-            new_df['per_mil_count'] = round(new_df['count'] / new_df['population'])
-            new_df = new_df.fillna(0).sort_values(by = ['country', 'status', 'dt_time'])
-            return new_df
+    min_dates = (new_df['dt_time'].mask(new_df['count'].eq(0))
+                 .groupby([new_df['country'], new_df['status']])
+                 .transform('min')
+                 )
 
-        return feature_engineering(concat_data)
+    new_df['Day Since the First Record'] = new_df['dt_time'] - min_dates
+    new_df = new_df[new_df['Day Since the First Record'] >= timedelta(0)]
 
+    return new_df
 
 
 url1 = "https://data.humdata.org/hxlproxy/data/download/time_series_covid19_confirmed_global_iso3_regions.csv?dest=data_edit&filter01=merge&merge-url01=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fe%2F2PACX-1vTglKQRXpkKSErDiWG6ycqEth32MY0reMuVGhaslImLjfuLU0EUgyyu2e-3vKDArjqGX7dXEBV8FJ4f%2Fpub%3Fgid%3D1326629740%26single%3Dtrue%26output%3Dcsv&merge-keys01=%23country%2Bname&merge-tags01=%23country%2Bcode%2C%23region%2Bmain%2Bcode%2C%23region%2Bmain%2Bname%2C%23region%2Bsub%2Bcode%2C%23region%2Bsub%2Bname%2C%23region%2Bintermediate%2Bcode%2C%23region%2Bintermediate%2Bname&filter02=merge&merge-url02=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2Fe%2F2PACX-1vTglKQRXpkKSErDiWG6ycqEth32MY0reMuVGhaslImLjfuLU0EUgyyu2e-3vKDArjqGX7dXEBV8FJ4f%2Fpub%3Fgid%3D398158223%26single%3Dtrue%26output%3Dcsv&merge-keys02=%23adm1%2Bname&merge-tags02=%23country%2Bcode%2C%23region%2Bmain%2Bcode%2C%23region%2Bmain%2Bname%2C%23region%2Bsub%2Bcode%2C%23region%2Bsub%2Bname%2C%23region%2Bintermediate%2Bcode%2C%23region%2Bintermediate%2Bname&merge-replace02=on&merge-overwrite02=on&tagger-match-all=on&tagger-01-header=province%2Fstate&tagger-01-tag=%23adm1%2Bname&tagger-02-header=country%2Fregion&tagger-02-tag=%23country%2Bname&tagger-03-header=lat&tagger-03-tag=%23geo%2Blat&tagger-04-header=long&tagger-04-tag=%23geo%2Blon&header-row=1&url=https%3A%2F%2Fraw.githubusercontent.com%2FCSSEGISandData%2FCOVID-19%2Fmaster%2Fcsse_covid_19_data%2Fcsse_covid_19_time_series%2Ftime_series_covid19_confirmed_global.csv"
@@ -95,7 +109,6 @@ url3 = 'https://data.humdata.org/hxlproxy/data/download/time_series_covid19_reco
 
 df_ = load_data(url1, url2, url3)
 
-
 # retrieve the latest date
 latest_date = max(df_.dt_time)
 
@@ -105,6 +118,7 @@ latest_date = max(df_.dt_time)
 if st.button("What's New"):
     st.success("2020-5-5: Per million population case updated in the map plot!")
     st.success("2020-5-6: Animation added and improved the loading performance!")
+    st.success("2020-5-8: Improved the Area Plot for better country comparison")
 
 
 st.title('COVID-19 Visualization')
@@ -127,6 +141,11 @@ def status_overview(x):
 status_overview(df_)
 
 st.header('Map Plot')
+st.markdown('##### ℹ️ Like all other COVID-19 maps you might have seen, this map will visualize the virus spread size'
+            'in each country/province. You can select different status on the sidebar. To make the comparison more '
+            "relative to each country's population, you can check the box of 'Per Million Cases' to view the "
+            "case number per million population for each country. For a better view, countries with smaller population"
+            "will be removed.")
 # graphs
 # create selector for map
 date_selector = st.date_input('Select A Date', max(df_['dt_time']))
@@ -136,12 +155,12 @@ status_selector = st.sidebar.selectbox('Select A Status', list(df_.status.unique
 st.info('1. Select a status on the sidebar')
 st.info('2. 🔎 Zoom in or drag to move; select a status on the sidebar')
 
-
 # --------------------------- Plot Section ----------------------------------------------------
 
 # @st.cache(persist=True, allow_output_mutation=True)
 st.markdown(f'### Current status selected: [{status_selector}]')
 per_mil = st.checkbox('Per Million Cases (excluding population<1 million)')
+
 @st.cache
 def gen_map(df):
     # create map
@@ -154,12 +173,14 @@ def gen_map(df):
         dff = ax[ax.population >= 1]
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
-                                 zoom=0.6,
+                                 zoom=0.6, hover_name= 'country',
                                  width=1000,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-                                                                 'confirmed': '#ADD8E6'}
+                                                                 'confirmed': '#ADD8E6'},
+                                 hover_data={'latitude': False,
+                                             'longitude': False,
+                                             })
 
-                                 )
         fig1.update_layout(margin=dict(l=0, r=100, t=0), showlegend=False)
         return fig1
 
@@ -169,68 +190,64 @@ def gen_map(df):
                                  width=1000,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
-
                                  )
+
         fig2.update_layout(margin=dict(l=0, r=100), showlegend=False)
         return fig2
 
     else:
-        st.write('Please select a valid date.')
+        None
 
-
-st.write(gen_map(df_))
+with st.spinner('Loading...'):
+    st.write(gen_map(df_))
 
 st.header('Time Series Visualization')
-st.markdown('### Status Area Plot')
-country_selector_df = df_.groupby(['country', 'dt_time', 'status'])['count'].agg('sum').reset_index()
+st.markdown('### Country Comparison')
+st.markdown('##### ℹ️ The Area Plot below is used to compare the developing trend across countries. There are two indicators used here. '
+            'The Daily Change% measures the increase rate of the case by different status. The  Daily Case Change is the absolute'
+            " number of new increased daily case. You can select different status on the sidebar. "
+            "Finally, to make 'apple-to-apple' comparison, it is important to align the first-record-day"
+            "for different countries." )
 top_n = st.number_input('Check top N Highest Confirmed Case Country', value=5, min_value=1, max_value=50)
 top_n_country = list(
-    country_selector_df.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
+    df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
         top_n))
 country_rank = [i for i in range(1, top_n + 1)]
 ziprank = zip(country_rank, top_n_country)
 dictcountry = dict(ziprank)
 st.markdown(dictcountry)
-country_selector = st.multiselect('Select Country', list(df_.country.unique()), ['US', 'United Kingdom'])
+country_selector = st.multiselect('Select countries to comparison', list(df_.country.unique()), ['US', 'United Kingdom'])
+kpi_selector = st.selectbox('Select a KPI', ['Daily Change%', 'Daily Case Change'])
 
 # area plot
-def area_plot(country_selector, country_selector_df):
-    #     def Union(lst1, lst2):
-    #         final_list = list(set().union(lst1, lst2))
-    #         return final_list
+@st.cache
+def area_plot(df, country_selector, kpi_selector):
+    dff = df[['country', 'status', 'Day Since the First Record', 'Daily Change%', 'Daily Case Change']]
+    dff['Daily Change%'] = dff['Daily Change%']*100
+    dff = pd.melt(dff, id_vars=['country', 'status', 'Day Since the First Record'], value_vars=['Daily Change%', 'Daily Case Change'],
+            value_name='value', var_name='kpi')
+    dff['Day Since the First Record'] = dff['Day Since the First Record'].dt.days
     if country_selector:
         if country_selector is None:
             None
         else:
-            con1 = country_selector_df.country.isin(country_selector)
-            con2 = country_selector_df.status.isin(['active', 'recovered', 'death'])
-            area_df = country_selector_df.loc[con1 & con2]
+            con1 = dff.country.isin(country_selector)
+            con2 = dff.status == status_selector
+            con3 = dff.kpi == kpi_selector
+            area_df = dff.loc[con1 & con2 & con3]
             fig = px.area(area_df,
-                          x="dt_time", y="count", color='status', line_group="country", width=1000,
+                          x="Day Since the First Record", y= 'value' , color='country', line_group="country", width=1000,
                           height=600,
                           color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-                                              'active': '#7B68EE'})
+                                              'active': '#7B68EE'}
+                          )
+
+            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+
             return fig
 
 
-st.write(area_plot(country_selector, country_selector_df))
-
-
-
-# # animation plot
-# top_n_country = list(
-#     df_.sort_values(by='count', ascending=False).drop_duplicates(subset='Country Name')['Country Name'].head(
-#         10))
-# df_['month_date'] = df_['dt_time'].dt.strftime("%y/%m/%d")
-# dff = df_.groupby(['Country Name', 'status', 'month_date'])['count'].agg('sum').reset_index()
-# con1 = df_['Country Name'].isin(top_n_country)
-# con2 = df_['status'] == status_selector
-# dff = df_.loc[con1 & con2]
-# dff.sort_values(by=['month_date', 'count'], ascending=True, inplace=True)
-# if status_selector:
-#     st.write(px.bar(dff, x="count", y="Country Name", animation_frame="month_date", animation_group="Country Name",
-#              hover_name="Country Name", width= 1000, height = 1200, orientation='h'))
-
+st.write(area_plot(df_, country_selector, kpi_selector))
 
 
 
@@ -251,31 +268,17 @@ def get_hbar_data(df_):
 dff = get_hbar_data(df_)
 
 st.markdown('###  Racing Bar Chart-- View the developing animation! ')
-st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!" )
+st.markdown('##### ℹ️ The chart is animated to view the developing pace by different countries. It clearly revealed '
+            "how other countries caught up after Hubei's breakout (province of China)")
+st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
+fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
+                   hover_name="country", width=800, height=800, orientation='h')
+fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
 if status_selector:
-    st.write(px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color = 'region',
-             hover_name="country", width= 800, height = 800, orientation='h'))
+    with st.spinner('Loading...'):
+        st.write(fig)
 
 
-
-# Daily Change Lineplot
-# st.markdown('### Daily Increase Trend')
-# country_selector_single = st.selectbox('Select A Country ', list(df_.country.unique()))
-
-# def change_pct_line(df):
-#     con1 = df.country == country_selector_single
-#     con2 = df.status.isin(['death', 'active', 'recovered'])
-#     dff = df.loc[con1 & con2]
-#     dff.sort_values(by = ['country','status','dt_time'], inplace=True)
-#     fig = px.line(dff, 'dt_time', 'diff_change', color = 'status',width=1000,
-#                           height=600,
-#                           color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-#                                               'active': '#7B68EE'})
-#     return fig
-#
-# st.write(change_pct_line(df))
-
-# sidebar
 if st.sidebar.checkbox("Show Raw Data"):
     st.header('Raw Data')
     con1 = df_['status'] == status_selector
@@ -347,6 +350,3 @@ st.sidebar.warning(
 
 st.sidebar.info('Contact: zakkyang@hotmail.com')
 
-# image = Image.open('sample.jpeg')
-# st.image(image, caption='Sunrise by the mountains',
-#          use_column_width=True)

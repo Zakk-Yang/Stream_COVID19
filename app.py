@@ -11,11 +11,7 @@ import numpy as np
 
 warnings.filterwarnings('ignore')
 
-config = {'modeBarButtonsToRemove': ['pan2d', 'select2d', 'lasso2d', 'zoomOut2d', 'zoomIn2d', 'hoverClosestCartesian',
-                                     'zoom2d', 'autoScale2d', 'hoverCompareCartesian', 'zoomInGeo', 'zoomOutGeo',
-                                     'hoverClosestGeo', 'hoverClosestGl2d', 'toggleHover',
-                                     'zoomInMapbox', 'zoomOutMapbox', 'toggleSpikelines'],
-          'displaylogo': False}
+
 
 # ---------------------------reading data----------------------------------------------------
 @st.cache(allow_output_mutation=True)
@@ -118,7 +114,9 @@ latest_date = max(df_.dt_time)
 if st.button("What's New"):
     st.success("2020-5-5: Per million population case updated in the map plot!")
     st.success("2020-5-6: Animation added and improved the loading performance!")
-    st.success("2020-5-8: Improved the Area Plot for better country comparison")
+    st.success("2020-5-8: Improved the Area Plot for better country comparison.")
+    st.success("2020-5-8: Added a status overview stacked bar.")
+
 
 
 st.title('COVID-19 Visualization')
@@ -139,6 +137,22 @@ def status_overview(x):
 
 
 status_overview(df_)
+
+# stackbar overview
+st.markdown('#### The peak was gone, but we need to be aware of a second wave')
+dff = df_.groupby(['status', 'dt_time'])['Daily Case Change'].agg('sum').reset_index()
+con = dff.status.isin(['death', 'active', 'recovered'])
+dff = dff.loc[con]
+fig = px.bar(dff, 'dt_time', 'Daily Case Change', color = 'status',
+             width=1000,
+             height=300, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
+                                             'confirmed': '#ADD8E6'})
+
+fig.update_layout(margin=dict(l=0, r=100, t=0), showlegend=True)
+fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+st.write(fig)
+
+
 
 st.header('Map Plot')
 st.markdown('##### ℹ️ Like all other COVID-19 maps you might have seen, this map will visualize the virus spread size'
@@ -214,7 +228,7 @@ ziprank = zip(country_rank, top_n_country)
 dictcountry = dict(ziprank)
 st.markdown(dictcountry)
 country_selector = st.multiselect('Select countries to comparison', list(df_.country.unique()), ['US', 'United Kingdom'])
-kpi_selector = st.selectbox('Select a KPI', ['Daily Change%', 'Daily Case Change'])
+kpi_selector = st.selectbox('Select an Indicator', ['Daily Change%', 'Daily Case Change'])
 
 # area plot
 def area_plot(df, country_selector, kpi_selector):

@@ -161,7 +161,6 @@ st.info('2. 🔎 Zoom in or drag to move; select a status on the sidebar')
 st.markdown(f'### Current status selected: [{status_selector}]')
 per_mil = st.checkbox('Per Million Cases (excluding population<1 million)')
 
-@st.cache
 def gen_map(df):
     # create map
     MBToken = 'pk.eyJ1Ijoic2NvaGVuZGUiLCJhIjoiY2szemMxczZoMXJhajNrcGRsM3cxdGdibiJ9.2oazpPgLvgJGF9EBOYa9Wg'
@@ -176,10 +175,8 @@ def gen_map(df):
                                  zoom=0.6, hover_name= 'country',
                                  width=1000,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-                                                                 'confirmed': '#ADD8E6'},
-                                 hover_data={'latitude': False,
-                                             'longitude': False,
-                                             })
+                                                                 'confirmed': '#ADD8E6'}
+                                 )
 
         fig1.update_layout(margin=dict(l=0, r=100, t=0), showlegend=False)
         return fig1
@@ -220,7 +217,6 @@ country_selector = st.multiselect('Select countries to comparison', list(df_.cou
 kpi_selector = st.selectbox('Select a KPI', ['Daily Change%', 'Daily Case Change'])
 
 # area plot
-@st.cache
 def area_plot(df, country_selector, kpi_selector):
     dff = df[['country', 'status', 'Day Since the First Record', 'Daily Change%', 'Daily Case Change']]
     dff['Daily Change%'] = dff['Daily Change%']*100
@@ -252,7 +248,6 @@ st.write(area_plot(df_, country_selector, kpi_selector))
 
 
 # animation plot
-@st.cache
 def get_hbar_data(df_):
     top_n_country = list(
         df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(

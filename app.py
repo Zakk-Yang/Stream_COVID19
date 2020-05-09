@@ -171,9 +171,6 @@ st.altair_chart(c, use_container_width=True)
 
 
 st.header('Map Plot')
-st.markdown('##### ℹ️ To make the comparison more '
-            "relative to each country's population, you can check the box of 'Per Million Cases' to view the "
-            "case number per million population for each country")
 # graphs
 # create selector for map
 date_selector = st.date_input('Select A Date', max(df_['date']))
@@ -181,7 +178,7 @@ st.sidebar.markdown('### Widgets')
 status_selector = st.sidebar.selectbox('Select A Status', list(df_.status.unique()))
 
 st.info('1. Select a status on the sidebar')
-st.info('2. 🔎 Zoom in or drag to move; select a status on the sidebar')
+st.info('2. 🔎 Pinch to zoom in or drag to move; select a status on the sidebar')
 
 # --------------------------- Plot Section ----------------------------------------------------
 
@@ -225,10 +222,6 @@ def gen_map(df):
 
 with st.spinner('Loading...'):
     st.write(gen_map(df_))
-
-
-
-
 
 
 
@@ -280,7 +273,7 @@ def alt_area(df, country_selector, kpi_selector):
 st.altair_chart(alt_area(df_, country_selector, kpi_selector), use_container_width=True)
 
 
-# # animation plot
+# @st.cache
 # def get_hbar_data(df_):
 #     top_n_country = list(
 #         df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(

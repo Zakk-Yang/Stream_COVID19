@@ -86,7 +86,7 @@ def load_data(url1, url2, url3):
 
     new_df = feature_engineering(concat_data)
 
-    min_dates = (new_df['dt_time'].mask(new_df['count'].eq(0))
+    min_dates = (new_df['dt_time'].mask(new_df['count'].eq(100))
                  .groupby([new_df['country'], new_df['status']])
                  .transform('min')
                  )
@@ -108,7 +108,7 @@ df_ = load_data(url1, url2, url3)
 # retrieve the latest date
 latest_date = max(df_.dt_time)
 
-width = 640
+width = 480
 height = 300
 # ---------------------------start page----------------------------------------------------
 
@@ -143,8 +143,9 @@ status_overview(df_)
 # stackbar overview
 st.markdown('#### The peak was gone, but we need to be aware of a second wave')
 dff = df_.groupby(['status', 'dt_time'])['Daily Case Change'].agg('sum').reset_index()
-con = dff.status.isin(['death', 'active', 'recovered'])
-dff = dff.loc[con]
+con1 = dff.status.isin(['death', 'active', 'recovered'])
+con2 = dff.dt_time >= '2020-03-01'
+dff = dff.loc[con1 & con2]
 fig = px.bar(dff, 'dt_time', 'Daily Case Change', color = 'status',
              width=width,
              height=height, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
@@ -188,9 +189,9 @@ def gen_map(df):
         dff = ax[ax.population >= 1]
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
-                                 zoom=0.6, hover_name= 'country',
+                                 zoom=0, hover_name= 'country',
                                  width=width,
-                                 height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
+                                 height=400, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
 
@@ -199,9 +200,9 @@ def gen_map(df):
 
     elif date_selector <= ax.dt_time.max() and date_selector >= ax.dt_time.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
-                                 lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0.6,
+                                 lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
                                  width=width,
-                                 height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
+                                 height=400, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
 

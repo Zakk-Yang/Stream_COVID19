@@ -7,6 +7,8 @@ from bokeh.models.widgets import Div
 import pandas as pd
 import warnings
 import numpy as np
+import altair as alt
+
 
 warnings.filterwarnings('ignore')
 
@@ -50,8 +52,8 @@ def load_data(url1, url2, url3):
         dim_col = df.columns[:4].to_list()
         add_list = ['status', 'iso_alpha']
         dim_col = dim_col + add_list
-        df = pd.melt(df, id_vars=dim_col, value_vars=date_col, var_name='dt_time', value_name='count')
-        df['dt_time'] = pd.to_datetime(df['dt_time'])
+        df = pd.melt(df, id_vars=dim_col, value_vars=date_col, var_name='date', value_name='count')
+        df['date'] = pd.to_datetime(df['date'])
 
         # calculate active cases
         new_dim = list(df.columns)
@@ -63,7 +65,7 @@ def load_data(url1, url2, url3):
                              value_name='count')
 
         # calculate the increase rate and diff
-        dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'dt_time', 'status']
+        dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'date', 'status']
         new_df.sort_values(by=dim, inplace=True)
         new_df['Daily Change%'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
         new_df['Daily Case Change'] = new_df.groupby(['country', 'status'])['count'].transform(lambda x: x.diff())
@@ -80,7 +82,7 @@ def load_data(url1, url2, url3):
         new_df.drop(columns=['population_x', 'province'], inplace=True)
         new_df.rename(columns={'population_y': 'population'}, inplace=True)
         new_df['per_mil_count'] = round(new_df['count'] / new_df['population'])
-        new_df = new_df.fillna(0).sort_values(by=['country', 'status', 'dt_time'])
+        new_df = new_df.fillna(0).sort_values(by=['country', 'status', 'date'])
         return new_df
 
     new_df = feature_engineering(concat_data)
@@ -89,12 +91,12 @@ def load_data(url1, url2, url3):
     con1 = new_df['status'] == 'confirmed'
     con2 = new_df['count'] >= 100
     a = new_df.loc[con1 & con2] # slice the group data first
-    a = a.groupby('country')['dt_time'].apply(lambda x: x.min()).reset_index() # calculate the min date for each country
+    a = a.groupby('country')['date'].apply(lambda x: x.min()).reset_index() # calculate the min date for each country
     new_df = pd.merge(new_df, a, how='left', on = 'country')
-    new_df['Day Since the First 100 Cumulative Confirmed Records'] = new_df['dt_time_x'] - new_df['dt_time_y']
-    new_df.rename(columns = {'dt_time_x': 'dt_time'},
+    new_df['Day Since the First 100 Cumulative Confirmed Records'] = new_df['date_x'] - new_df['date_y']
+    new_df.rename(columns = {'date_x': 'date'},
                   inplace=True)
-    new_df.drop('dt_time_y', axis=1 ,inplace=True)
+    new_df.drop('date_y', axis=1 ,inplace=True)
 
     return new_df
 
@@ -108,9 +110,9 @@ url3 = 'https://data.humdata.org/hxlproxy/data/download/time_series_covid19_reco
 df_ = load_data(url1, url2, url3)
 
 # retrieve the latest date
-latest_date = max(df_.dt_time)
+latest_date = max(df_.date)
 
-width = 480
+width = 400
 height = 300
 # ---------------------------start page----------------------------------------------------
 
@@ -131,10 +133,10 @@ st.text(f"updated by {latest_date.date()}")
 
 def status_overview(x):
     con1 = x.status == 'confirmed'
-    con2 = x.dt_time == latest_date
+    con2 = x.date == latest_date
     total_confirmed = x.loc[con1 & con2]['count'].sum()
     yesterday = latest_date - timedelta(days=1)
-    con3 = x.dt_time == yesterday
+    con3 = x.date == yesterday
     total_confirmed_yesterday = x.loc[con1 & con3]['count'].sum()
     new_cases = total_confirmed - total_confirmed_yesterday
     increase_rate = new_cases / total_confirmed
@@ -146,19 +148,32 @@ status_overview(df_)
 
 # stackbar overview
 st.markdown('#### The peak was gone, but we need to be aware of a second wave')
-dff = df_.groupby(['status', 'dt_time'])['Daily Case Change'].agg('sum').reset_index()
+dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_index()
 con1 = dff.status.isin(['death', 'active', 'recovered'])
-con2 = dff.dt_time >= '2020-03-01'
+con2 = dff.date >= '2020-03-01'
 dff = dff.loc[con1 & con2]
-fig = px.bar(dff, 'dt_time', 'Daily Case Change', color = 'status',
-             width=width,
-             height=height, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-                                             'confirmed': '#ADD8E6'})
+# fig = px.bar(dff, 'date', 'Daily Case Change', color = 'status',
+#              width=width,
+#              height=height, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
+#                                              'confirmed': '#ADD8E6'})
+#
+# fig.update_layout(margin=dict(l=0, r=100, t=0), showlegend=True)
+# fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+# fig.update_layout(legend=dict(x=0, y=1))
+# st.write(fig)
 
-fig.update_layout(margin=dict(l=0, r=100, t=0), showlegend=True)
-fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-fig.update_layout(legend=dict(x=0, y=1))
-st.write(fig)
+# stackedbar overview (altair)
+domain = ['recovered', 'death', 'active']
+range_ = ['#90EE90', '#DC143C', '#6a0dad']
+c = alt.Chart(dff).mark_bar().encode(
+    x='date',
+    y='Daily Case Change',
+    color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_)),
+    tooltip = ['status', 'Daily Case Change']).configure_axis(
+    grid=False)
+st.altair_chart(c, use_container_width=True)
+
+
 
 
 
@@ -170,7 +185,7 @@ st.markdown('##### ℹ️ Like all other COVID-19 maps you might have seen, this
             "will be removed.")
 # graphs
 # create selector for map
-date_selector = st.date_input('Select A Date', max(df_['dt_time']))
+date_selector = st.date_input('Select A Date', max(df_['date']))
 st.sidebar.markdown('### Widgets')
 status_selector = st.sidebar.selectbox('Select A Status', list(df_.status.unique()))
 
@@ -188,7 +203,7 @@ def gen_map(df):
     MBToken = 'pk.eyJ1Ijoic2NvaGVuZGUiLCJhIjoiY2szemMxczZoMXJhajNrcGRsM3cxdGdibiJ9.2oazpPgLvgJGF9EBOYa9Wg'
     px.set_mapbox_access_token(MBToken)
     con1 = df['status'] == status_selector
-    con2 = df['dt_time'] == pd.to_datetime(date_selector)
+    con2 = df['date'] == pd.to_datetime(date_selector)
     ax = df.loc[con1 & con2]
     if per_mil:
         dff = ax[ax.population >= 1]
@@ -203,7 +218,7 @@ def gen_map(df):
         fig1.update_layout(margin=dict(l=0, r=100, t=0), showlegend=False)
         return fig1
 
-    elif date_selector <= ax.dt_time.max() and date_selector >= ax.dt_time.min():
+    elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
                                  width=width,
@@ -276,23 +291,25 @@ def get_hbar_data(df_):
     top_n_country = list(
         df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
             15))
-    df_['month_date'] = df_['dt_time'].dt.strftime("%y/%m/%d")
+    df_['month_date'] = df_['date'].dt.strftime("%y/%m/%d")
     con1 = df_['country'].isin(top_n_country)
     con2 = df_['status'] == status_selector
     con3 = df_['month_date'] >= '20/02/25'
     dff = df_.loc[con1 & con2 & con3]
-    dff.sort_values(by=['dt_time', 'count'], ascending=True, inplace=True)
+    dff.sort_values(by=['date', 'count'], ascending=True, inplace=True)
     return dff
 
 dff = get_hbar_data(df_)
+
 
 st.markdown('###  Racing Bar Chart-- View the developing animation! ')
 st.markdown('##### ℹ️ The chart is animated to view the developing pace by different countries. It clearly revealed '
             "how other countries caught up after Hubei's breakout (province of China)")
 st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
 fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
-                   hover_name="country", width=350, height=600, orientation='h')
-fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
+                   hover_name="country", width=width, height=600, orientation='h')
+fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=False)
+
 if status_selector:
     with st.spinner('Loading...'):
         st.write(fig)
@@ -301,9 +318,9 @@ if status_selector:
 if st.sidebar.checkbox("Show Raw Data"):
     st.header('Raw Data')
     con1 = df_['status'] == status_selector
-    con2 = df_['dt_time'] == pd.to_datetime(date_selector)
-    data_source = df_.loc[con1 & con2].sort_values(by='dt_time')
-    data_source.dt_time = pd.to_datetime(data_source.dt_time, format='%Y%m%d')
+    con2 = df_['date'] == pd.to_datetime(date_selector)
+    data_source = df_.loc[con1 & con2].sort_values(by='date')
+    data_source.date = pd.to_datetime(data_source.date, format='%Y%m%d')
     st.write(data_source)
 
 

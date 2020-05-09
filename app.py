@@ -1,5 +1,4 @@
 from datetime import timedelta
-import datetime
 import streamlit as st
 import plotly.express as px
 import requests
@@ -86,13 +85,16 @@ def load_data(url1, url2, url3):
 
     new_df = feature_engineering(concat_data)
 
-    min_dates = (new_df['dt_time'].mask(new_df['count'].eq(100))
-                 .groupby([new_df['country'], new_df['status']])
-                 .transform('min')
-                 )
-
-    new_df['Day Since the First Record'] = new_df['dt_time'] - min_dates
-    new_df = new_df[new_df['Day Since the First Record'] >= timedelta(0)]
+    # retrieve the first date when the confirmed case>100
+    con1 = new_df['status'] == 'confirmed'
+    con2 = new_df['count'] >= 100
+    a = new_df.loc[con1 & con2] # slice the group data first
+    a = a.groupby('country')['dt_time'].apply(lambda x: x.min()).reset_index() # calculate the min date for each country
+    new_df = pd.merge(new_df, a, how='left', on = 'country')
+    new_df['Day Since the First 100 Cumulative Confirmed Records'] = new_df['dt_time_x'] - new_df['dt_time_y']
+    new_df.rename(columns = {'dt_time_x': 'dt_time'},
+                  inplace=True)
+    new_df.drop('dt_time_y', axis=1 ,inplace=True)
 
     return new_df
 
@@ -118,6 +120,8 @@ if st.button("What's New"):
     st.success("2020-5-6: Animation added and improved the loading performance!")
     st.success("2020-5-8: Improved the Area Plot for better country comparison.")
     st.success("2020-5-8: Added a status overview stacked bar.")
+    st.success("2020-5-9: Correct the comparison plot and optimize the mobile view.")
+
 
 
 
@@ -153,6 +157,7 @@ fig = px.bar(dff, 'dt_time', 'Daily Case Change', color = 'status',
 
 fig.update_layout(margin=dict(l=0, r=100, t=0), showlegend=True)
 fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
+fig.update_layout(legend=dict(x=0, y=1))
 st.write(fig)
 
 
@@ -235,11 +240,12 @@ kpi_selector = st.selectbox('Select an Indicator', ['Daily Change%', 'Daily Case
 
 # area plot
 def area_plot(df, country_selector, kpi_selector):
-    dff = df[['country', 'status', 'Day Since the First Record', 'Daily Change%', 'Daily Case Change']]
+    dff = df[['country', 'status', 'Day Since the First 100 Cumulative Confirmed Records', 'Daily Change%', 'Daily Case Change']]
     dff['Daily Change%'] = dff['Daily Change%']*100
-    dff = pd.melt(dff, id_vars=['country', 'status', 'Day Since the First Record'], value_vars=['Daily Change%', 'Daily Case Change'],
+    dff = pd.melt(dff, id_vars=['country', 'status', 'Day Since the First 100 Cumulative Confirmed Records'], value_vars=['Daily Change%', 'Daily Case Change'],
             value_name='value', var_name='kpi')
-    dff['Day Since the First Record'] = dff['Day Since the First Record'].dt.days
+    dff = dff[dff['Day Since the First 100 Cumulative Confirmed Records'] >= timedelta(0)]
+    dff['Day Since the First 100 Cumulative Confirmed Records'] = dff['Day Since the First 100 Cumulative Confirmed Records'].dt.days
     if country_selector:
         if country_selector is None:
             None
@@ -249,14 +255,15 @@ def area_plot(df, country_selector, kpi_selector):
             con3 = dff.kpi == kpi_selector
             area_df = dff.loc[con1 & con2 & con3]
             fig = px.area(area_df,
-                          x="Day Since the First Record", y= 'value' , color='country', line_group="country", width=width,
-                          height=height,
+                          x="Day Since the First 100 Cumulative Confirmed Records", y= 'value' , color='country', line_group="country", width=width,
+                          height=400,
                           color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                               'active': '#7B68EE'}
                           )
 
             fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-
+            fig.update_layout(legend=dict(x=0, y=1))
+            fig.update_yaxes(visible=False, showticklabels=False)
             return fig
 
 
@@ -284,7 +291,7 @@ st.markdown('##### ℹ️ The chart is animated to view the developing pace by d
             "how other countries caught up after Hubei's breakout (province of China)")
 st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
 fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
-                   hover_name="country", width=width, height=600, orientation='h')
+                   hover_name="country", width=350, height=600, orientation='h')
 fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
 if status_selector:
     with st.spinner('Loading...'):
@@ -307,7 +314,7 @@ def _set_block_container_style(
         padding_top: int = 5,
         padding_right: int = 2,
         padding_left: int = 1,
-        padding_bottom: int = 1,
+        padding_bottom: int = 0,
 ):
     if max_width_100_percent:
         max_width_str = f"max-width: 100%;"
@@ -336,9 +343,9 @@ def select_block_container_style():
         1200,  # max width
         False,
         4,  # padding_top
-        1,  # padding_right
-        1,  # padding_left
-        10,  # padding_bottom
+        2,  # padding_right
+        0.5,  # padding_left
+        0,  # padding_bottom
     )
 
 

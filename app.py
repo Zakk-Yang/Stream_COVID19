@@ -119,7 +119,6 @@ height = 300
 
 if st.button("What's New"):
     st.success("2020-5-5: Per million population case updated in the map plot!")
-    st.success("2020-5-6: Animation added and improved the loading performance!")
     st.success("2020-5-8: Improved the Area Plot for better country comparison.")
     st.success("2020-5-8: Added a status overview stacked bar.")
     st.success("2020-5-9: Correct the comparison plot and optimize the mobile view.")
@@ -281,33 +280,33 @@ def alt_area(df, country_selector, kpi_selector):
 st.altair_chart(alt_area(df_, country_selector, kpi_selector), use_container_width=True)
 
 
-# animation plot
-def get_hbar_data(df_):
-    top_n_country = list(
-        df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
-            15))
-    df_['month_date'] = df_['date'].dt.strftime("%y/%m/%d")
-    con1 = df_['country'].isin(top_n_country)
-    con2 = df_['status'] == status_selector
-    con3 = df_['month_date'] >= '20/02/25'
-    dff = df_.loc[con1 & con2 & con3]
-    dff.sort_values(by=['date', 'count'], ascending=True, inplace=True)
-    return dff
-
-dff = get_hbar_data(df_)
-
-
-st.markdown('###  Racing Bar Chart-- View the developing animation! ')
-st.markdown('##### ℹ️ The chart is animated to view the developing pace by different countries. It clearly revealed '
-            "how other countries caught up after Hubei's breakout (province of China)")
-st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
-fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
-                   hover_name="country", width=480, height=600, orientation='h')
-fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=False)
-
-if status_selector:
-    with st.spinner('Loading...'):
-        st.write(fig)
+# # animation plot
+# def get_hbar_data(df_):
+#     top_n_country = list(
+#         df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
+#             15))
+#     df_['month_date'] = df_['date'].dt.strftime("%y/%m/%d")
+#     con1 = df_['country'].isin(top_n_country)
+#     con2 = df_['status'] == status_selector
+#     con3 = df_['month_date'] >= '20/02/25'
+#     dff = df_.loc[con1 & con2 & con3]
+#     dff.sort_values(by=['date', 'count'], ascending=True, inplace=True)
+#     return dff
+#
+# dff = get_hbar_data(df_)
+#
+#
+# st.markdown('###  Racing Bar Chart-- View the developing animation! ')
+# st.markdown('##### ℹ️ The chart is animated to view the developing pace by different countries. It clearly revealed '
+#             "how other countries caught up after Hubei's breakout (province of China)")
+# st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
+# fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
+#                    hover_name="country", width=480, height=600, orientation='h')
+# fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=False)
+#
+# if status_selector:
+#     with st.spinner('Loading...'):
+#         st.write(fig)
 
 
 if st.sidebar.checkbox("Show Raw Data"):

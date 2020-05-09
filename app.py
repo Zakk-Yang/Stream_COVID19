@@ -152,25 +152,18 @@ dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_inde
 con1 = dff.status.isin(['death', 'active', 'recovered'])
 con2 = dff.date >= '2020-03-01'
 dff = dff.loc[con1 & con2]
-# fig = px.bar(dff, 'date', 'Daily Case Change', color = 'status',
-#              width=width,
-#              height=height, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-#                                              'confirmed': '#ADD8E6'})
-#
-# fig.update_layout(margin=dict(l=0, r=100, t=0), showlegend=True)
-# fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
-# fig.update_layout(legend=dict(x=0, y=1))
-# st.write(fig)
+
 
 # stackedbar overview (altair)
-domain = ['recovered', 'death', 'active']
-range_ = ['#90EE90', '#DC143C', '#6a0dad']
+domain = ['recovered', 'death','active']
+range_ = ['#90EE90', '#DC143C','#9932CC']
 c = alt.Chart(dff).mark_bar().encode(
     x='date',
-    y = 'Daily Case Change',
+    y = 'Daily Case Change', order=alt.Order('status', sort='ascending'),
     color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_)),
     tooltip = ['status', 'Daily Case Change']).configure_axis(
-    grid=False)
+                grid=False).configure_view(strokeWidth=0).properties(
+    title = 'Global Daily Case Increase')
 st.altair_chart(c, use_container_width=True)
 
 
@@ -210,7 +203,7 @@ def gen_map(df):
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
                                  zoom=0, hover_name= 'country',
-                                 width=480,
+                                 width=600,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -221,7 +214,7 @@ def gen_map(df):
     elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
-                                 width=480,
+                                 width=600,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -259,15 +252,17 @@ dictcountry = dict(ziprank)
 st.markdown(dictcountry)
 country_selector = st.multiselect('Select countries to comparison', list(df_.country.unique()), ['US', 'United Kingdom'])
 kpi_selector = st.selectbox('Select an Indicator', ['Daily Change%', 'Daily Case Change'])
+st.info('Select a status on the side bar')
 
 # area plot
-def area_plot(df, country_selector, kpi_selector):
+def alt_area(df, country_selector, kpi_selector):
     dff = df[['country', 'status', 'Day Since the First 100 Cumulative Confirmed Records', 'Daily Change%', 'Daily Case Change']]
     dff['Daily Change%'] = dff['Daily Change%']*100
     dff = pd.melt(dff, id_vars=['country', 'status', 'Day Since the First 100 Cumulative Confirmed Records'], value_vars=['Daily Change%', 'Daily Case Change'],
             value_name='value', var_name='kpi')
     dff = dff[dff['Day Since the First 100 Cumulative Confirmed Records'] >= timedelta(0)]
     dff['Day Since the First 100 Cumulative Confirmed Records'] = dff['Day Since the First 100 Cumulative Confirmed Records'].dt.days
+    dff = dff.round(0)
     if country_selector:
         if country_selector is None:
             None
@@ -276,22 +271,17 @@ def area_plot(df, country_selector, kpi_selector):
             con2 = dff.status == status_selector
             con3 = dff.kpi == kpi_selector
             area_df = dff.loc[con1 & con2 & con3]
-            fig = px.area(area_df,
-                          x="Day Since the First 100 Cumulative Confirmed Records", y= 'value' , color='country', line_group="country",
-                          width=480,
-                          height=400,
-                          color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
-                                              'active': '#7B68EE'}
-                          )
+            c = alt.Chart(area_df).mark_area(opacity=0.5).encode(
+                                x=alt.X("Day Since the First 100 Cumulative Confirmed Records",axis=alt.Axis(grid = False)),
+                                y=alt.Y("value", axis=alt.Axis(labels=True, title= kpi_selector)),
+                                color="country", tooltip =[ 'country', 'kpi','value' ]).configure_axis(
+                grid=False).configure_view(strokeWidth=0,strokeOpacity=0.1).properties(
+    title = f'{kpi_selector} Timeline Trend'
+)
 
-            fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)')
-            fig.update_layout(legend=dict(x=0, y=1))
-            fig.update_yaxes(visible=False, showticklabels=False)
-            return fig
+            return c
 
-
-st.write(area_plot(df_, country_selector, kpi_selector))
-
+st.altair_chart(alt_area(df_, country_selector, kpi_selector), use_container_width=True)
 
 
 # animation plot

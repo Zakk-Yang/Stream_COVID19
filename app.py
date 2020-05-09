@@ -167,7 +167,7 @@ domain = ['recovered', 'death', 'active']
 range_ = ['#90EE90', '#DC143C', '#6a0dad']
 c = alt.Chart(dff).mark_bar().encode(
     x='date',
-    y='Daily Case Change',
+    y = 'Daily Case Change',
     color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_)),
     tooltip = ['status', 'Daily Case Change']).configure_axis(
     grid=False)
@@ -210,8 +210,8 @@ def gen_map(df):
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
                                  zoom=0, hover_name= 'country',
-                                 width=width,
-                                 height=400, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
+                                 width=480,
+                                 height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
 
@@ -221,8 +221,8 @@ def gen_map(df):
     elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
-                                 width=width,
-                                 height=400, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
+                                 width=480,
+                                 height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
 
@@ -234,6 +234,13 @@ def gen_map(df):
 
 with st.spinner('Loading...'):
     st.write(gen_map(df_))
+
+
+
+
+
+
+
 
 st.header('Time Series Visualization')
 st.markdown('### Country Comparison')
@@ -270,7 +277,8 @@ def area_plot(df, country_selector, kpi_selector):
             con3 = dff.kpi == kpi_selector
             area_df = dff.loc[con1 & con2 & con3]
             fig = px.area(area_df,
-                          x="Day Since the First 100 Cumulative Confirmed Records", y= 'value' , color='country', line_group="country", width=width,
+                          x="Day Since the First 100 Cumulative Confirmed Records", y= 'value' , color='country', line_group="country",
+                          width=480,
                           height=400,
                           color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                               'active': '#7B68EE'}
@@ -307,7 +315,7 @@ st.markdown('##### ℹ️ The chart is animated to view the developing pace by d
             "how other countries caught up after Hubei's breakout (province of China)")
 st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
 fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
-                   hover_name="country", width=width, height=600, orientation='h')
+                   hover_name="country", width=480, height=600, orientation='h')
 fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=False)
 
 if status_selector:

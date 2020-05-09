@@ -160,7 +160,8 @@ range_ = ['#90EE90', '#DC143C','#9932CC']
 c = alt.Chart(dff).mark_bar().encode(
     x='date',
     y = 'Daily Case Change', order=alt.Order('status', sort='ascending'),
-    color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_)),
+    color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_),
+                    legend=alt.Legend(title="Status", orient = 'top-left')),
     tooltip = ['status', 'Daily Case Change']).configure_axis(
                 grid=False).configure_view(strokeWidth=0).properties(
     title = 'Global Daily Case Increase')
@@ -171,11 +172,9 @@ st.altair_chart(c, use_container_width=True)
 
 
 st.header('Map Plot')
-st.markdown('##### ℹ️ Like all other COVID-19 maps you might have seen, this map will visualize the virus spread size'
-            'in each country/province. You can select different status on the sidebar. To make the comparison more '
+st.markdown('##### ℹ️ To make the comparison more '
             "relative to each country's population, you can check the box of 'Per Million Cases' to view the "
-            "case number per million population for each country. For a better view, countries with smaller population"
-            "will be removed.")
+            "case number per million population for each country")
 # graphs
 # create selector for map
 date_selector = st.date_input('Select A Date', max(df_['date']))
@@ -237,11 +236,7 @@ with st.spinner('Loading...'):
 
 st.header('Time Series Visualization')
 st.markdown('### Country Comparison')
-st.markdown('##### ℹ️ The Area Plot below is used to compare the developing trend across countries. There are two indicators used here. '
-            'The Daily Change% measures the increase rate of the case by different status. The  Daily Case Change is the absolute'
-            " number of new increased daily case. You can select different status on the sidebar. "
-            "Finally, to make 'apple-to-apple' comparison, it is important to align the first-record-day"
-            "for different countries." )
+st.markdown('##### ℹ️ Please select indicators and status.' )
 top_n = st.number_input('Check top N Highest Confirmed Case Country', value=5, min_value=1, max_value=50)
 top_n_country = list(
     df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
@@ -274,7 +269,9 @@ def alt_area(df, country_selector, kpi_selector):
             c = alt.Chart(area_df).mark_area(opacity=0.5).encode(
                                 x=alt.X("Day Since the First 100 Cumulative Confirmed Records",axis=alt.Axis(grid = False)),
                                 y=alt.Y("value", axis=alt.Axis(labels=True, title= kpi_selector)),
-                                color="country", tooltip =[ 'country', 'kpi','value' ]).configure_axis(
+                color=alt.Color('country',
+                                legend=alt.Legend(title="Country", orient='top-left')),
+                tooltip =[ 'country', 'kpi','value' ]).configure_axis(
                 grid=False).configure_view(strokeWidth=0,strokeOpacity=0.1).properties(
     title = f'{kpi_selector} Timeline Trend'
 )

@@ -147,18 +147,25 @@ status_overview(df_)
 
 # stackbar overview
 st.markdown('#### The peak was gone, but we need to be aware of a second wave')
-dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_index()
-con1 = dff.status.isin(['death', 'active', 'recovered'])
-con2 = dff.date >= '2020-03-01'
-dff = dff.loc[con1 & con2]
+@st.cache
+def stacked_data(df_):
+    dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_index()
+    con1 = dff.status.isin(['death', 'active', 'recovered'])
+    con2 = dff.date >= '2020-03-01'
+    dff = dff.loc[con1 & con2]
+    return dff
+
+dff = stacked_data(df_)
+
 
 
 # stackedbar overview (altair)
 domain = ['recovered', 'death','active']
 range_ = ['#90EE90', '#DC143C','#9932CC']
 c = alt.Chart(dff).mark_bar().encode(
-    x='date',
-    y = 'Daily Case Change', order=alt.Order('status', sort='ascending'),
+    x=alt.X('date',axis=alt.Axis(ticks=False, domain=False)),
+    y = alt.Y('Daily Case Change',axis=alt.Axis(ticks=False, domain=False)),
+    order=alt.Order('status', sort='ascending'),
     color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_),
                     legend=alt.Legend(title="Status", orient = 'top-left')),
     tooltip = ['status', 'Daily Case Change']).configure_axis(
@@ -198,7 +205,7 @@ def gen_map(df):
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
                                  zoom=0, hover_name= 'country',
-                                 width=600,
+                                 width=800,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -209,7 +216,7 @@ def gen_map(df):
     elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
-                                 width=600,
+                                 width=800,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -259,8 +266,11 @@ def alt_area(df, country_selector, kpi_selector):
             con3 = dff.kpi == kpi_selector
             area_df = dff.loc[con1 & con2 & con3]
             c = alt.Chart(area_df).mark_area(opacity=0.5).encode(
-                                x=alt.X("Day Since the First 100 Cumulative Confirmed Records",axis=alt.Axis(grid = False)),
-                                y=alt.Y("value", axis=alt.Axis(labels=True, title= kpi_selector)),
+                                x=alt.X("Day Since the First 100 Cumulative Confirmed Records",
+                                        axis=alt.Axis(ticks=False, domain=False)
+                                        ),
+                                y=alt.Y("value", axis=alt.Axis(labels=True, title= kpi_selector,
+                                                               ticks=False, domain=False)),
                 color=alt.Color('country',
                                 legend=alt.Legend(title="Country", orient='top-left')),
                 tooltip =[ 'country', 'kpi','value' ]).configure_axis(

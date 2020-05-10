@@ -168,7 +168,7 @@ c = alt.Chart(dff).mark_bar().encode(
     order=alt.Order('status', sort='ascending'),
     color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_),
                     legend=alt.Legend(title="Status", orient = 'top-left')),
-    tooltip = ['status', 'Daily Case Change']).configure_axis(
+    tooltip = ['date','status', 'Daily Case Change']).configure_axis(
                 grid=False).configure_view(strokeWidth=0).properties(
     title = 'Global Daily Case Increase')
 st.altair_chart(c, use_container_width=True)
@@ -273,10 +273,10 @@ def alt_area(df, country_selector, kpi_selector):
                                                                ticks=False, domain=False)),
                 color=alt.Color('country',
                                 legend=alt.Legend(title="Country", orient='top-left')),
-                tooltip =[ 'country', 'kpi','value' ]).configure_axis(
+                tooltip =['country', 'kpi','value' ]).configure_axis(
                 grid=False).configure_view(strokeWidth=0,strokeOpacity=0.1).properties(
     title = f'{kpi_selector} Timeline Trend'
-)
+).interactive()
 
             return c
 

@@ -8,8 +8,7 @@ import pandas as pd
 import warnings
 import numpy as np
 import altair as alt
-import locale
-locale.setlocale(locale.LC_ALL, 'en_US')
+
 
 
 warnings.filterwarnings('ignore')
@@ -119,9 +118,6 @@ height = 300
 
 
 # ---------------------------helper function ----------------------------------------------------
-def thousand_sep(num):
-    return locale.format("%d", num, grouping=True)
-
 
 # ---------------------------main ----------------------------------------------------
 
@@ -155,11 +151,11 @@ def status_overview(x):
     total_confirmed_yesterday = x.loc[con1 & con3]['count'].sum()
     new_cases = total_confirmed - total_confirmed_yesterday
     increase_rate = new_cases / total_confirmed
-    st.write('Total Confirmed: ', thousand_sep(total_confirmed))
+    st.write('Total Confirmed: {}'.format(round(total_confirmed)))
     if increase_rate >0:
-        st.write('Daily Increased New Cases: {}, ⬆ ️{:.2%}'.format(thousand_sep(new_cases), increase_rate))
+        st.write('Daily Increased New Cases: {}, ⬆ ️{:.2%}'.format((new_cases), increase_rate))
     else:
-        st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format(thousand_sep(new_cases), increase_rate))
+        st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format((new_cases), increase_rate))
 
 
 

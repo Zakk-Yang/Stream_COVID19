@@ -8,6 +8,8 @@ import pandas as pd
 import warnings
 import numpy as np
 import altair as alt
+import locale
+locale.setlocale(locale.LC_ALL, 'en_US')
 
 
 warnings.filterwarnings('ignore')
@@ -114,21 +116,35 @@ latest_date = max(df_.date)
 
 width = 400
 height = 300
-# ---------------------------start page----------------------------------------------------
 
 
-if st.button("What's New"):
-    st.success("2020-5-5: Per million population case updated in the map plot!")
-    st.success("2020-5-8: Improved the Area Plot for better country comparison.")
-    st.success("2020-5-8: Added a status overview stacked bar.")
-    st.success("2020-5-9: Correct the comparison plot and optimize the mobile view.")
+# ---------------------------helper function ----------------------------------------------------
+def thousand_sep(num):
+    return locale.format("%d", num, grouping=True)
 
 
+# ---------------------------main ----------------------------------------------------
 
-
+def main():
+    # Render the readme as markdown using st.markdown.
+    st.sidebar.title("Navigation")
+    app_mode = st.sidebar.selectbox("Choose a section:",
+        ["Overview", "Country Comparison", "Trend Animation"])
+    if app_mode == "Overview":
+        status_overview(df_)
+        gen_stackedbar(df_)
+        st.text('')
+        st.write(gen_map(df_))
+    elif app_mode == "Country Comparison":
+        st.altair_chart(alt_area(df_), use_container_width=True)
+    elif app_mode == "Trend Animation":
+        st.write(racing_bar(df_))
+# ---------------------------contents for all pages----------------------------------------------------
 st.title('COVID-19 Visualization')
 st.text(f"updated by {latest_date.date()}")
+st.markdown('### 👈 Please select the section in the sidebar')
 
+# ---------------------------overview page ----------------------------------------------------
 
 def status_overview(x):
     con1 = x.status == 'confirmed'
@@ -139,61 +155,61 @@ def status_overview(x):
     total_confirmed_yesterday = x.loc[con1 & con3]['count'].sum()
     new_cases = total_confirmed - total_confirmed_yesterday
     increase_rate = new_cases / total_confirmed
-    st.markdown('### Total Confirmed: {}'.format(total_confirmed))
-    st.markdown('### Daily Increased New Cases: {}, ⬆️{:.2%}'.format(new_cases, increase_rate))
-
-
-status_overview(df_)
-
-# stackbar overview
-st.markdown('#### The peak was gone, but we need to be aware of a second wave')
-@st.cache
-def stacked_data(df_):
-    dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_index()
-    con1 = dff.status.isin(['death', 'active', 'recovered'])
-    con2 = dff.date >= '2020-03-01'
-    dff = dff.loc[con1 & con2]
-    return dff
-
-dff = stacked_data(df_)
+    st.write('Total Confirmed: ', thousand_sep(total_confirmed))
+    if increase_rate >0:
+        st.write('Daily Increased New Cases: {}, ⬆ ️{:.2%}'.format(thousand_sep(new_cases), increase_rate))
+    else:
+        st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format(thousand_sep(new_cases), increase_rate))
 
 
 
-# stackedbar overview (altair)
-domain = ['recovered', 'death','active']
-range_ = ['#90EE90', '#DC143C','#9932CC']
-c = alt.Chart(dff).mark_bar().encode(
-    x=alt.X('date',axis=alt.Axis(ticks=False, domain=False)),
-    y = alt.Y('Daily Case Change',axis=alt.Axis(ticks=False, domain=False)),
-    order=alt.Order('status', sort='ascending'),
-    color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_),
-                    legend=alt.Legend(title="Status", orient = 'top-left')),
-    tooltip = ['date','status', 'Daily Case Change']).configure_axis(
-                grid=False).configure_view(strokeWidth=0).properties(
-    title = 'Global Daily Case Increase')
-st.altair_chart(c, use_container_width=True)
+# stackedbar overview
+def gen_stackedbar(df_):
+    st.subheader('Overall Trend')
+    st.text('It is still growing but at a lower pace compared to April. Despite the peak was gone, '
+            'we still need to be cautious of a second wave.')
+    st.text("")
+    st.text("")
+
+    @st.cache
+    def stacked_data(df_):
+        dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_index()
+        con1 = dff.status.isin(['death', 'active', 'recovered'])
+        con2 = dff.date >= '2020-03-01'
+        dff = dff.loc[con1 & con2]
+        return dff
+
+    dff= stacked_data(df_)
+
+    # stackedbar overview (altair)
+    domain = ['recovered', 'death','active']
+    range_ = ['#90EE90', '#DC143C','#9932CC']
+    c = alt.Chart(dff).mark_bar().encode(
+        x=alt.X('date',axis=alt.Axis(ticks=False, domain=False)),
+        y = alt.Y('Daily Case Change',axis=alt.Axis(ticks=False, domain=False)),
+        order=alt.Order('status', sort='ascending'),
+        color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_),
+                        legend=alt.Legend(title="Status", orient = 'top-left')),
+        tooltip = ['date','status', 'Daily Case Change']).configure_axis(
+                    grid=False).configure_view(strokeWidth=0).properties(
+        title = 'Global Daily Case Increase')
+    return st.altair_chart(c, use_container_width=True)
 
 
-
-
-
-st.header('Map Plot')
-# graphs
-# create selector for map
-date_selector = st.date_input('Select A Date', max(df_['date']))
-st.sidebar.markdown('### Widgets')
-status_selector = st.sidebar.selectbox('Select A Status', list(df_.status.unique()))
-
-st.info('1. Select a status on the sidebar')
-st.info('2. 🔎 Pinch to zoom in or drag to move; select a status on the sidebar')
-
-# --------------------------- Plot Section ----------------------------------------------------
-
-# @st.cache(persist=True, allow_output_mutation=True)
-st.markdown(f'### Current status selected: [{status_selector}]')
-per_mil = st.checkbox('Per Million Cases (excluding population<1 million)')
 
 def gen_map(df):
+    st.subheader('Map Plot')
+    # graphs
+    # create selector for map
+    global date_selector
+    date_selector = st.date_input('Select A Date', max(df_['date']))
+    global status_selector
+    status_selector = st.selectbox('Select A Status', list(df_.status.unique()))
+    # --------------------------- Plot Section ----------------------------------------------------
+
+    # @st.cache(persist=True, allow_output_mutation=True)
+    st.markdown(f'### Current status selected: [{status_selector}]')
+    per_mil = st.checkbox('Per Million Cases (excluding population<1 million)')
     # create map
     MBToken = 'pk.eyJ1Ijoic2NvaGVuZGUiLCJhIjoiY2szemMxczZoMXJhajNrcGRsM3cxdGdibiJ9.2oazpPgLvgJGF9EBOYa9Wg'
     px.set_mapbox_access_token(MBToken)
@@ -205,7 +221,7 @@ def gen_map(df):
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
                                  zoom=0, hover_name= 'country',
-                                 width=800,
+                                 width=1000,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -216,7 +232,7 @@ def gen_map(df):
     elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
-                                 width=800,
+                                 width=1000,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -227,29 +243,17 @@ def gen_map(df):
     else:
         None
 
-with st.spinner('Loading...'):
-    st.write(gen_map(df_))
 
 
+# --------------------------- country comparison page ----------------------------------------------------
 
-
-st.header('Time Series Visualization')
-st.markdown('### Country Comparison')
-st.markdown('##### ℹ️ Please select indicators and status.' )
-top_n = st.number_input('Check top N Highest Confirmed Case Country', value=5, min_value=1, max_value=50)
-top_n_country = list(
-    df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
-        top_n))
-country_rank = [i for i in range(1, top_n + 1)]
-ziprank = zip(country_rank, top_n_country)
-dictcountry = dict(ziprank)
-st.markdown(dictcountry)
-country_selector = st.multiselect('Select countries to comparison', list(df_.country.unique()), ['US', 'United Kingdom'])
-kpi_selector = st.selectbox('Select an Indicator', ['Daily Change%', 'Daily Case Change'])
-st.info('Select a status on the side bar')
-
-# area plot
-def alt_area(df, country_selector, kpi_selector):
+def alt_area(df):
+    st.markdown('### Country Comparison')
+    st.markdown('##### ℹ️ Please select indicators and status.' )
+    country_selector = st.multiselect('Select countries to comparison', list(df_.country.unique()), ['US', 'United Kingdom'])
+    kpi_selector = st.selectbox('Select an Indicator', ['Daily Change%', 'Daily Case Change'])
+    status_selector = st.selectbox('Select A Status', list(df_.status.unique()))
+    # area plot
     dff = df[['country', 'status', 'Day Since the First 100 Cumulative Confirmed Records', 'Daily Change%', 'Daily Case Change']]
     dff['Daily Change%'] = dff['Daily Change%']*100
     dff = pd.melt(dff, id_vars=['country', 'status', 'Day Since the First 100 Cumulative Confirmed Records'], value_vars=['Daily Change%', 'Daily Case Change'],
@@ -257,70 +261,68 @@ def alt_area(df, country_selector, kpi_selector):
     dff = dff[dff['Day Since the First 100 Cumulative Confirmed Records'] >= timedelta(0)]
     dff['Day Since the First 100 Cumulative Confirmed Records'] = dff['Day Since the First 100 Cumulative Confirmed Records'].dt.days
     dff = dff.round(0)
-    if country_selector:
-        if country_selector is None:
-            None
-        else:
-            con1 = dff.country.isin(country_selector)
-            con2 = dff.status == status_selector
-            con3 = dff.kpi == kpi_selector
-            area_df = dff.loc[con1 & con2 & con3]
-            c = alt.Chart(area_df).mark_area(opacity=0.5).encode(
-                                x=alt.X("Day Since the First 100 Cumulative Confirmed Records",
-                                        axis=alt.Axis(ticks=False, domain=False)
-                                        ),
-                                y=alt.Y("value", axis=alt.Axis(labels=True, title= kpi_selector,
-                                                               ticks=False, domain=False)),
-                color=alt.Color('country',
-                                legend=alt.Legend(title="Country", orient='top-left')),
-                tooltip =['country', 'kpi','value' ]).configure_axis(
-                grid=False).configure_view(strokeWidth=0,strokeOpacity=0.1).properties(
-    title = f'{kpi_selector} Timeline Trend'
-).interactive()
+    if country_selector is None:
+        None
+    else:
+        con1 = dff.country.isin(country_selector)
+        con2 = dff.status == status_selector
+        con3 = dff.kpi == kpi_selector
+        area_df = dff.loc[con1 & con2 & con3]
+        c = alt.Chart(area_df).mark_area(opacity=0.65).encode(
+                            x=alt.X("Day Since the First 100 Cumulative Confirmed Records",
+                                    axis=alt.Axis(ticks=False, domain=False)
+                                    ),
+                            y=alt.Y("value", axis=alt.Axis(labels=True, title= kpi_selector,
+                                                           ticks=False, domain=False)),
+            color=alt.Color('country',
+                            legend=alt.Legend(title="Country", orient='top-left')),
+            tooltip =['Day Since the First 100 Cumulative Confirmed Records',
+                      'country', 'kpi','value' ]).configure_axis(
+            grid=False).configure_view(strokeWidth=0,strokeOpacity=0.1).properties(
+title = f'{kpi_selector} Timeline Trend').interactive()
 
-            return c
-
-st.altair_chart(alt_area(df_, country_selector, kpi_selector), use_container_width=True)
+        return c
 
 
-# @st.cache
-# def get_hbar_data(df_):
-#     top_n_country = list(
-#         df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
-#             15))
-#     df_['month_date'] = df_['date'].dt.strftime("%y/%m/%d")
-#     con1 = df_['country'].isin(top_n_country)
-#     con2 = df_['status'] == status_selector
-#     con3 = df_['month_date'] >= '20/02/25'
-#     dff = df_.loc[con1 & con2 & con3]
-#     dff.sort_values(by=['date', 'count'], ascending=True, inplace=True)
-#     return dff
-#
-# dff = get_hbar_data(df_)
-#
-#
-# st.markdown('###  Racing Bar Chart-- View the developing animation! ')
-# st.markdown('##### ℹ️ The chart is animated to view the developing pace by different countries. It clearly revealed '
-#             "how other countries caught up after Hubei's breakout (province of China)")
-# st.info("Please select the 'status' on the sidebar and click the play button below to view the animation!")
-# fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
-#                    hover_name="country", width=480, height=600, orientation='h')
-# fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=False)
-#
+# ---------------------------racing bar page ----------------------------------------------------
+
+def racing_bar(df_):
+    st.markdown('###  Racing Bar Chart-- View the developing animation')
+    status_selector_ = st.selectbox('Select A Status', ['active', 'death', 'recovered'])
+    @st.cache
+    def get_hbar_data(df_):
+        top_n_country = list(
+            df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
+                15))
+        df_['month_date'] = df_['date'].dt.strftime("%y/%m/%d")
+        con1 = df_['country'].isin(top_n_country)
+        con2 = df_['status'] == status_selector_
+        con3 = df_['month_date'] >= '20/02/25'
+        dff = df_.loc[con1 & con2 & con3]
+        dff.sort_values(by=['date', 'count'], ascending=True, inplace=True)
+        return dff
+
+    dff = get_hbar_data(df_)
+    fig = px.bar(dff, x="count", y="country", animation_frame="month_date", animation_group="country", color='region',
+                       hover_name="country", width=1000, height=600, orientation='h')
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=True)
+    fig.update_layout(yaxis_title='', yaxis_showticklabels=True)
+    return fig
+
 # if status_selector:
 #     with st.spinner('Loading...'):
 #         st.write(fig)
 
-
-if st.sidebar.checkbox("Show Raw Data"):
-    st.header('Raw Data')
-    con1 = df_['status'] == status_selector
-    con2 = df_['date'] == pd.to_datetime(date_selector)
-    data_source = df_.loc[con1 & con2].sort_values(by='date')
-    data_source.date = pd.to_datetime(data_source.date, format='%Y%m%d')
-    st.write(data_source)
-
-
+#
+# if st.sidebar.checkbox("Show Raw Data"):
+#     st.header('Raw Data')
+#     con1 = df_['status'] == status_selector
+#     con2 = df_['date'] == pd.to_datetime(date_selector)
+#     data_source = df_.loc[con1 & con2].sort_values(by='date')
+#     data_source.date = pd.to_datetime(data_source.date, format='%Y%m%d')
+#     st.write(data_source)
+#
+#
 # layout customization
 def _set_block_container_style(
         max_width: int = 1200,
@@ -356,7 +358,7 @@ def select_block_container_style():
     _set_block_container_style(
         1200,  # max width
         False,
-        4,  # padding_top
+        1,  # padding_top
         2,  # padding_right
         0.5,  # padding_left
         0,  # padding_bottom
@@ -364,22 +366,15 @@ def select_block_container_style():
 
 
 select_block_container_style()
+#
+# if st.sidebar.button('LinkedIn'):
+#     js = "window.open('https://www.linkedin.com/in/zakkyang/')"  # New tab or window
+#     # js = "window.location.href = 'https://www.streamlit.io/'"  # Current tab
+#     html = '<img src onerror="{}">'.format(js)
+#     div = Div(text=html)
+#     st.bokeh_chart(div)
+# st.sidebar.info('Contact: zakkyang@hotmail.com')
 
-if st.sidebar.button('LinkedIn'):
-    js = "window.open('https://www.linkedin.com/in/zakkyang/')"  # New tab or window
-    # js = "window.location.href = 'https://www.streamlit.io/'"  # Current tab
-    html = '<img src onerror="{}">'.format(js)
-    div = Div(text=html)
-    st.bokeh_chart(div)
 
-st.sidebar.markdown('### Following Plans to Update:')
-st.sidebar.warning('🎯  Normalize the time series plot for better apple-to-apple comparison')
-st.sidebar.warning('🎯  Add per million population into map and time series plot')
-st.sidebar.warning('🎯  Add animation to plot the time series developing trend ')
-st.sidebar.warning('🎯  Predict when the COVID will end using time series ML tool')
-st.sidebar.warning('🎯  Improve the sidebar function')
-st.sidebar.warning(
-    '🎯  Using NLP to anaylize the sentiment on COVID-19 -- whether we are gaining more confidence than yesterday in Twitter when tagging the COVID keyword')
-
-st.sidebar.info('Contact: zakkyang@hotmail.com')
-
+if __name__ == "__main__":
+    main()

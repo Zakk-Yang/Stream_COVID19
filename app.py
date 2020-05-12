@@ -124,7 +124,7 @@ height = 300
 def main():
     # Render the readme as markdown using st.markdown.
     st.sidebar.title("Navigation")
-    app_mode = st.sidebar.selectbox("Choose a section:",
+    app_mode = st.sidebar.radio("Choose a section:",
         ["Overview", "Country Comparison", "Trend Animation"])
     if app_mode == "Overview":
         status_overview(df_)
@@ -135,6 +135,13 @@ def main():
         st.altair_chart(alt_area(df_), use_container_width=True)
     elif app_mode == "Trend Animation":
         st.write(racing_bar(df_))
+    if st.sidebar.button('LinkedIn'):
+        js = "window.open('https://www.linkedin.com/in/zakkyang/')"  # New tab or window
+        # js = "window.location.href = 'https://www.streamlit.io/'"  # Current tab
+        html = '<img src onerror="{}">'.format(js)
+        div = Div(text=html)
+        st.bokeh_chart(div)
+    st.sidebar.info('Contact: zakkyang@hotmail.com')
 # ---------------------------contents for all pages----------------------------------------------------
 st.title('COVID-19 Visualization')
 st.text(f"updated by {latest_date.date()}")
@@ -158,11 +165,32 @@ def status_overview(x):
         st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format((new_cases), increase_rate))
 
 
+# def status_overview(x):
+#     con1 = x.status == 'confirmed'
+#     con2 = x.date == latest_date
+#     dff = x.loc[con1 & con2]
+#     dff = dff.groupby('status')['count','Daily Case Change'].agg('sum').reset_index()
+#     yesterday = latest_date - timedelta(days=1)
+#     con1 = x.status == 'confirmed'
+#     con2 = x.date == yesterday
+#     dff_ = x.loc[con1 & con2]
+#     dff_ = dff_.groupby('status')['Daily Case Change'].agg('sum').reset_index()
+#     increase_rate = dff['Daily Case Change'].sum()/dff['count'].sum()
+#     new_cases = dff['Daily Case Change'].sum()
+#     total_confirmed = dff['count'].sum()
+#     st.write('Total Confirmed: {}'.format(round(total_confirmed)))
+#     if new_cases >0:
+#         st.write('Daily Increased New Cases: {}, ⬆ ️{:.2%}'.format(new_cases, increase_rate))
+#     else:
+#         st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format(new_cases, increase_rate))
+
+
+
 
 # stackedbar overview
 def gen_stackedbar(df_):
     st.subheader('Overall Trend')
-    st.text('It is still growing but at a lower pace compared to April. Despite the peak was gone, '
+    st.write('It is still growing but at a lower pace compared to April. Despite the peak was gone, '
             'we still need to be cautious of a second wave.')
     st.text("")
     st.text("")
@@ -181,15 +209,35 @@ def gen_stackedbar(df_):
     domain = ['recovered', 'death','active']
     range_ = ['#90EE90', '#DC143C','#9932CC']
     c = alt.Chart(dff).mark_bar().encode(
-        x=alt.X('date',axis=alt.Axis(ticks=False, domain=False)),
-        y = alt.Y('Daily Case Change',axis=alt.Axis(ticks=False, domain=False)),
+        x=alt.X('date',axis=alt.Axis(ticks=False, domain=False, grid = False)),
+        y = alt.Y('Daily Case Change',axis=alt.Axis(ticks=False, domain=False, grid = False)),
         order=alt.Order('status', sort='ascending'),
         color=alt.Color('status', scale=alt.Scale(domain=domain, range=range_),
                         legend=alt.Legend(title="Status", orient = 'top-left')),
-        tooltip = ['date','status', 'Daily Case Change']).configure_axis(
-                    grid=False).configure_view(strokeWidth=0).properties(
+        tooltip = ['date','status', 'Daily Case Change']).properties(
         title = 'Global Daily Case Increase')
-    return st.altair_chart(c, use_container_width=True)
+
+    top_n_daily_country = df_.groupby(['country', 'status'])['Daily Case Change'].agg('sum').\
+        reset_index().sort_values(by = 'Daily Case Change', ascending=False).drop_duplicates()
+    top_n_daily_country = top_n_daily_country[top_n_daily_country.status == 'active'].head(15)
+
+    c2 = alt.Chart(top_n_daily_country).mark_bar().encode(
+        x= alt.X('Daily Case Change',axis=alt.Axis(ticks=False, domain=False, grid = False)),
+        y=alt.Y("country", sort = '-x',axis=alt.Axis(ticks=False, domain=False, grid = False))
+    ).properties(
+        title = 'Top Daily Case Increase Country')
+
+    text = c2.mark_text(
+        align='left',
+        baseline='middle',
+        dx=3  # Nudges text to right so it doesn't appear on top of the bar
+    ).encode(
+        text='Daily Case Change'
+    )
+
+    fig = alt.hconcat(c, (c2 + text)).configure_view(strokeWidth = 0)
+
+    return st.altair_chart(fig, use_container_width=True)
 
 
 
@@ -363,13 +411,7 @@ def select_block_container_style():
 
 select_block_container_style()
 #
-# if st.sidebar.button('LinkedIn'):
-#     js = "window.open('https://www.linkedin.com/in/zakkyang/')"  # New tab or window
-#     # js = "window.location.href = 'https://www.streamlit.io/'"  # Current tab
-#     html = '<img src onerror="{}">'.format(js)
-#     div = Div(text=html)
-#     st.bokeh_chart(div)
-# st.sidebar.info('Contact: zakkyang@hotmail.com')
+
 
 
 if __name__ == "__main__":

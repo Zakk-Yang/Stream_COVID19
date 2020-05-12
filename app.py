@@ -135,13 +135,10 @@ def main():
         st.altair_chart(alt_area(df_), use_container_width=True)
     elif app_mode == "Trend Animation":
         st.write(racing_bar(df_))
-    if st.sidebar.button('LinkedIn'):
-        js = "window.open('https://www.linkedin.com/in/zakkyang/')"  # New tab or window
-        # js = "window.location.href = 'https://www.streamlit.io/'"  # Current tab
-        html = '<img src onerror="{}">'.format(js)
-        div = Div(text=html)
-        st.bokeh_chart(div)
+    st.sidebar.markdown('''[🔗LinkedIn](https://www.linkedin.com/in/zakkyang/)'''
+                                   ,unsafe_allow_html=True)
     st.sidebar.info('Contact: zakkyang@hotmail.com')
+
 # ---------------------------contents for all pages----------------------------------------------------
 st.title('COVID-19 Visualization')
 st.markdown('#### (best for desktop and landscape view in mobile)')

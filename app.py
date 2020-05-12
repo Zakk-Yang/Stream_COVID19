@@ -144,6 +144,7 @@ def main():
     st.sidebar.info('Contact: zakkyang@hotmail.com')
 # ---------------------------contents for all pages----------------------------------------------------
 st.title('COVID-19 Visualization')
+st.markdown('#### (best for desktop and landscape view in mobile)')
 st.text(f"updated by {latest_date.date()}")
 st.markdown('### 👈 Please select the section in the sidebar')
 

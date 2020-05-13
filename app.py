@@ -224,7 +224,7 @@ def gen_stackedbar(df_):
         x= alt.X('Daily Case Change',axis=alt.Axis(ticks=False, domain=False, grid = False)),
         y=alt.Y("country", sort = '-x',axis=alt.Axis(ticks=False, domain=False, grid = False))
     ).properties(
-        title = 'Top Daily Case Increase Country')
+        title = 'Top Daily Case Increase by Country')
 
     text = c2.mark_text(
         align='left',

@@ -215,10 +215,11 @@ def gen_stackedbar(df_):
         tooltip = ['date','status', 'Daily Case Change']).properties(
         title = 'Global Daily Case Increase')
 
-    top_n_daily_country = df_.groupby(['country', 'status'])['Daily Case Change'].agg('sum').\
+    top_n_daily_country = df_.groupby(['country', 'status', 'date'])['Daily Case Change'].agg('sum').\
         reset_index().sort_values(by = 'Daily Case Change', ascending=False).drop_duplicates()
-    top_n_daily_country = top_n_daily_country[top_n_daily_country.status == 'active'].head(15)
-
+    con1 = top_n_daily_country.status == 'active'
+    con2 = top_n_daily_country.date == latest_date
+    top_n_daily_country = top_n_daily_country.loc[con1 & con2].head(15)
     c2 = alt.Chart(top_n_daily_country).mark_bar().encode(
         x= alt.X('Daily Case Change',axis=alt.Axis(ticks=False, domain=False, grid = False)),
         y=alt.Y("country", sort = '-x',axis=alt.Axis(ticks=False, domain=False, grid = False))

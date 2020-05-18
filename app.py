@@ -125,16 +125,20 @@ def main():
     # Render the readme as markdown using st.markdown.
     st.sidebar.title("Navigation")
     app_mode = st.sidebar.radio("Choose a section:",
-        ["Overview", "Country Comparison", "Trend Animation"])
+        ["Overview", "Country Comparison", "Racing Bar Chart"])
     if app_mode == "Overview":
         status_overview(df_)
         gen_stackedbar(df_)
         st.text('')
         st.write(gen_map(df_))
+        st.text('')
+        st.write(scatter_plot(get_scatter_data(df_)))
     elif app_mode == "Country Comparison":
         st.altair_chart(alt_area(df_), use_container_width=True)
-    elif app_mode == "Trend Animation":
+    elif app_mode == "Racing Bar Chart":
         st.write(racing_bar(df_))
+    st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
+                                   ,unsafe_allow_html=True)
     st.sidebar.markdown('''[🔗LinkedIn](https://www.linkedin.com/in/zakkyang/)'''
                                    ,unsafe_allow_html=True)
     st.sidebar.info('Contact: zakkyang@hotmail.com')
@@ -251,7 +255,7 @@ def gen_map(df):
     # --------------------------- Plot Section ----------------------------------------------------
 
     # @st.cache(persist=True, allow_output_mutation=True)
-    st.markdown(f'### Current status selected: [{status_selector}]')
+    st.markdown(f'#### Current status selected: [{status_selector}]')
     per_mil = st.checkbox('Per Million Cases (excluding population<1 million)')
     # create map
     MBToken = 'pk.eyJ1Ijoic2NvaGVuZGUiLCJhIjoiY2szemMxczZoMXJhajNrcGRsM3cxdGdibiJ9.2oazpPgLvgJGF9EBOYa9Wg'
@@ -288,6 +292,51 @@ def gen_map(df):
 
 
 
+@st.cache
+def get_scatter_data(df_):
+    # prepare the data
+    con1 = df_.date >= '2020-03-10'
+    con2 = df_.population >=5
+    top_n_country = list(
+        df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
+            20))
+    con3 = df_.country.isin(top_n_country)
+    dff = df_.loc[con1 & con2 & con3]
+    dff = pd.pivot_table(dff,index = ['country',
+                                      'date','region',
+                                      'Day Since the First 100 Cumulative Confirmed Records'],
+                         columns = 'status',
+                         values = ['count']).reset_index()
+    dff = dff.set_index(['country', 'region', 'date', 'Day Since the First 100 Cumulative Confirmed Records'])
+    dff.columns = dff.columns.droplevel(0)
+    dff = dff.reset_index()
+    dff['death_rate'] = dff['death']/dff['confirmed']
+    # join per capita
+    world_pop = df_[['country', 'population']].drop_duplicates()
+    dff = pd.merge(dff, world_pop, on = 'country')
+    dff['per_capita_death' ]= dff['death']/dff['population']
+    dff['per_capita_confirmed'] = dff['confirmed']/dff['population']
+    dff['date'] = dff['date'].dt.strftime('%m/%d')
+    dff.dropna(subset = ['per_capita_death'], inplace=True)
+    dff.sort_values(by = 'date', inplace=True)
+    return dff
+
+def scatter_plot(dff):
+    st.subheader('Death Trend')
+    st.text('Note: bubble size represents per million population death count')
+    fig = px.scatter(dff, x="per_capita_confirmed", y="death_rate",
+                     animation_frame="date", size='per_capita_death',
+                     animation_group="country", color="region", hover_name="country", size_max=100, text='country',
+                     range_x=[0, max(dff['per_capita_confirmed'])], range_y=[0, max(dff['death_rate'])],
+                     width=1000,
+                     height=600)
+    fig.update_layout({
+        'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+        'paper_bgcolor': 'rgba(0, 0, 0, 0)',
+    })
+    fig.update_layout(yaxis_title="Death Rate",
+                      xaxis_title="Per Million Population Confirmed Case")
+    return fig
 # --------------------------- country comparison page ----------------------------------------------------
 
 def alt_area(df):
@@ -334,6 +383,7 @@ def racing_bar(df_):
     status_selector_ = st.selectbox('Select A Status', ['active', 'death', 'recovered'])
     @st.cache
     def get_hbar_data(df_):
+        global top_n_country
         top_n_country = list(
             df_.sort_values(by='count', ascending=False).drop_duplicates(subset='country')['country'].head(
                 15))

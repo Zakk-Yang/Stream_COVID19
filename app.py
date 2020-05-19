@@ -406,6 +406,7 @@ def racing_bar(df_):
                        hover_name="country", width=1000, height=600, orientation='h')
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',  showlegend=True)
     fig.update_layout(yaxis_title='', yaxis_showticklabels=True)
+    fig.update_layout(dragmode=False)
     return fig
 
 # if status_selector:

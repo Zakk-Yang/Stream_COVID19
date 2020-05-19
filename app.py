@@ -268,7 +268,7 @@ def gen_map(df):
         fig1 = px.scatter_mapbox(dff, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="per_mil_count", size_max=50,
                                  zoom=0, hover_name= 'country',
-                                 width=1000,
+                                 width=900,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )
@@ -280,7 +280,7 @@ def gen_map(df):
     elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
         fig2 = px.scatter_mapbox(ax, text='country', opacity=0.6,
                                  lat="latitude", lon="longitude", color='status', size="count", size_max=50, zoom=0,
-                                 width=1000,
+                                 width=900,
                                  height=600, color_discrete_map={'death': '#DC143C', 'recovered': '#90EE90',
                                                                  'confirmed': '#ADD8E6'}
                                  )

@@ -274,6 +274,7 @@ def gen_map(df):
                                  )
 
         fig1.update_layout(margin=dict(l=0, r=100, t=0), showlegend=False)
+        fig1.update_layout(dragmode=False)
         return fig1
 
     elif date_selector <= ax.date.max() and date_selector >= ax.date.min():
@@ -285,6 +286,8 @@ def gen_map(df):
                                  )
 
         fig2.update_layout(margin=dict(l=0, r=100), showlegend=False)
+        fig2.update_layout(dragmode=False)
+
         return fig2
 
     else:
@@ -336,6 +339,9 @@ def scatter_plot(dff):
     })
     fig.update_layout(yaxis_title="Death Rate",
                       xaxis_title="Per Million Population Confirmed Case")
+    fig.update_layout(dragmode=False)
+
+
     return fig
 # --------------------------- country comparison page ----------------------------------------------------
 

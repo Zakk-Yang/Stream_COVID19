@@ -61,13 +61,15 @@ def load_data(url1, url2, url3):
         new_dim.remove('count')
         new_dim.remove('status')
         new_df = pd.pivot_table(df, index=new_dim, columns='status', values='count').reset_index()
-        new_df['active'] = new_df['confirmed'] - new_df['recovered']
+        new_df['active'] = new_df['confirmed'] - new_df['recovered'] - new_df['death']
+        # update data error for Spain
+        #new_df.at[26774, 'recovered'] = 196958.00
         new_df = new_df.melt(id_vars=new_dim, value_vars=['confirmed', 'active', 'recovered', 'death'],
                              value_name='count')
 
         # calculate the increase rate and diff
         dim = ['country', 'region', 'iso_alpha', 'latitude', 'longitude', 'date', 'status']
-        new_df.sort_values(by=dim, inplace=True)
+        new_df.sort_values(by=['country', 'status', 'date'], inplace=True)
         new_df['Daily Change%'] = new_df.groupby(['country', 'status'])['count'].apply(pd.Series.pct_change)
         new_df['Daily Case Change'] = new_df.groupby(['country', 'status'])['count'].transform(lambda x: x.diff())
 

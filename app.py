@@ -194,15 +194,15 @@ def status_overview(x):
 # stackedbar overview
 def gen_stackedbar(df_):
     st.subheader('Overall Trend')
-    st.write('It is still growing but at a lower pace compared to April. Despite the peak was gone, '
-            'we still need to be cautious of a second wave.')
-    st.text("")
-    st.text("")
+    # st.write('It is still growing but at a lower pace compared to April. Despite the peak was gone, '
+    #         'we still need to be cautious of a second wave.')
+    # st.text("")
+    # st.text("")
 
     @st.cache
     def stacked_data(df_):
         dff = df_.groupby(['status', 'date'])['Daily Case Change'].agg('sum').reset_index()
-        con1 = dff.status.isin(['death', 'active', 'recovered'])
+        con1 = dff.status.isin(['death', 'confirmed', 'recovered'])
         con2 = dff.date >= '2020-03-01'
         dff = dff.loc[con1 & con2]
         return dff
@@ -210,7 +210,7 @@ def gen_stackedbar(df_):
     dff= stacked_data(df_)
 
     # stackedbar overview (altair)
-    domain = ['recovered', 'death','active']
+    domain = ['recovered', 'death','confirmed']
     range_ = ['#90EE90', '#DC143C','#9932CC']
     c = alt.Chart(dff).mark_bar().encode(
         x=alt.X('date',axis=alt.Axis(ticks=False, domain=False, grid = False)),

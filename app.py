@@ -429,7 +429,7 @@ host="ec2-34-230-149-169.compute-1.amazonaws.com",
 port="5432",
 database="db72j9mubepavv"
 def get_db():
-    conn = pg.connect(database=database, user="user", password=password, host= host)
+    conn = pg.connect(database=database, user= user, password=password, host= host)
     sql = """
     select *
     FROM sentiment

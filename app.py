@@ -8,9 +8,12 @@ import warnings
 import numpy as np
 import altair as alt
 warnings.filterwarnings("ignore")
+from sqlalchemy import create_engine
+import os
+import psycopg2 as pg
+import pandas.io.sql as psql
 
-
-
+postgres_database_password = os.environ['postgres_password']
 # ---------------------------reading data----------------------------------------------------
 @st.cache(allow_output_mutation=True)
 def load_data(url1, url2, url3):
@@ -136,8 +139,8 @@ def main():
     elif app_mode == "Racing Bar Chart":
         st.write(racing_bar(df_))
     elif app_mode == 'Sentiment Analysis':
-        world_sentiment_bar()
-        tweet_table()
+        world_sentiment_bar(twitter_db)
+        tweet_table(twitter_db)
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)
     st.sidebar.markdown('''[🔗LinkedIn](https://www.linkedin.com/in/zakkyang/)'''
@@ -392,9 +395,53 @@ def racing_bar(df_):
     return fig
 
 
-def world_sentiment_bar():
+# def world_sentiment_bar():
+#     st.write('Note: the sentiment analysis is based on daily Twitter contents')
+#     df = pd.read_csv('sentiment_df.csv')
+#     country_sentiment =  df.groupby(['country', 'vader_sentiment']).agg({'name': 'count'})
+#     sentiment_pcts = country_sentiment.groupby(level=0).apply(lambda x:
+#                                                      round(100 * x / float(x.sum()))).reset_index()
+#
+#     sentiment_pcts.rename(columns = {'name': 'pct%'}, inplace=True)
+#
+#     domain = ['positive', 'negative', 'neutral']
+#     range_ = ['#90EE90', '#DC143C', '#A9A9A9']
+#
+#     fig = alt.Chart(sentiment_pcts).mark_bar().encode(
+#         x=alt.X('pct%'),
+#         y='country',
+#         color=alt.Color('vader_sentiment', scale=alt.Scale(domain=domain, range=range_),
+#                         legend=alt.Legend(title="Sentiment", orient='right')),
+#         tooltip=['country', 'vader_sentiment', 'pct%']).properties(
+#         title='COVID Sentiment by Country')
+#
+#     return st.altair_chart(fig, use_container_width=True)
+#
+# def tweet_table():
+#     df = pd.read_csv('sentiment_df.csv')
+#     tweet_table = df.drop(df.columns[0], axis =1)
+#     tweet_table.drop(['name', 'retweets', 'location', 'followers', 'is_user_verified'], axis =1, inplace=True)
+#     if st.button('View Tweets'):
+#         st.table(tweet_table)
+
+user="erugboqiaqbruv",
+password=postgres_database_password,
+host="ec2-34-230-149-169.compute-1.amazonaws.com",
+port="5432",
+database="db72j9mubepavv"
+def get_db():
+    conn = pg.connect(database=database, user="user", password=password, host= host)
+    sql = """
+    select *
+    FROM sentiment
+    """
+    df = psql.read_sql(sql, con=conn)
+    return df
+
+twitter_db = get_db()
+
+def world_sentiment_bar(df):
     st.write('Note: the sentiment analysis is based on daily Twitter contents')
-    df = pd.read_csv('sentiment_df.csv')
     country_sentiment =  df.groupby(['country', 'vader_sentiment']).agg({'name': 'count'})
     sentiment_pcts = country_sentiment.groupby(level=0).apply(lambda x:
                                                      round(100 * x / float(x.sum()))).reset_index()
@@ -414,14 +461,11 @@ def world_sentiment_bar():
 
     return st.altair_chart(fig, use_container_width=True)
 
-def tweet_table():
-    df = pd.read_csv('sentiment_df.csv')
+def tweet_table(df):
     tweet_table = df.drop(df.columns[0], axis =1)
     tweet_table.drop(['name', 'retweets', 'location', 'followers', 'is_user_verified'], axis =1, inplace=True)
     if st.button('View Tweets'):
         st.table(tweet_table)
-
-
 
 
 # layout customization

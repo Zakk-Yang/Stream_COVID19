@@ -9,6 +9,7 @@ import numpy as np
 import altair as alt
 warnings.filterwarnings("ignore")
 import os
+from sqlalchemy import create_engine
 import psycopg2 as pg
 import pandas.io.sql as psql
 
@@ -423,18 +424,15 @@ def racing_bar(df_):
 #     if st.button('View Tweets'):
 #         st.table(tweet_table)
 
-user="erugboqiaqbruv",
-password=postgres_database_password,
-host="ec2-34-230-149-169.compute-1.amazonaws.com",
-port="5432",
-database="db72j9mubepavv"
+
 def get_db():
-    conn = pg.connect(database=database, user= user, password=password, host= host)
+    URI = os.environ['URI']
+    engine = create_engine(URI)
     sql = """
     select *
     FROM sentiment
     """
-    df = psql.read_sql(sql, con=conn)
+    df = pd.read_sql_query(sql, con=engine)
     return df
 
 twitter_db = get_db()

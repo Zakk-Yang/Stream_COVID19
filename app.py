@@ -8,7 +8,6 @@ import warnings
 import numpy as np
 import altair as alt
 warnings.filterwarnings("ignore")
-from sqlalchemy import create_engine
 import os
 import psycopg2 as pg
 import pandas.io.sql as psql

@@ -2,17 +2,27 @@ import os
 import tweepy
 import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-
+from sqlalchemy import create_engine
+import psycopg2 as pg
+import pandas.io.sql as psql
 
 
 customer_key = os.environ['customer_key']
 customer_secret = os.environ['customer_secret']
 access_token = os.environ['access_token']
 access_secret = os.environ['access_secret']
+postgres_database_password = os.environ['postgres_password']
+
+
+
 
 auth = tweepy.OAuthHandler(customer_key, customer_secret)
 auth.set_access_token(access_token, access_secret)
 api = tweepy.API(auth, wait_on_rate_limit=False)
+
+
+#Create a connection credentials to the PostgreSQL database
+
 
 def stream_tweets(search_term, location, retreive_num):
     '''
@@ -95,5 +105,34 @@ def vader_sentiment_calc(tweet):
 
 df['vader_sentiment'] = df['tweet'].apply(vader_sentiment_calc)
 
-df.to_csv('sentiment_df.csv')
+# df.to_csv('sentiment_df.csv')
+#
+# def create_table():
+#     try:
+#         connection = psycopg2.connect(
+#             user="erugboqiaqbruv",
+#             password=postgres_database_password,
+#             host="ec2-34-230-149-169.compute-1.amazonaws.com",
+#             port="5432",
+#             database="db72j9mubepavv"
+#         )
+#         c = connection.cursor()
+#         c.execute("CREATE TABLE IF NOT EXISTS sentiment(country TEXT, tweet_date DATE NOT NULL, tweet TEXT, sentiment REAL)")
+#         c.execute("CREATE INDEX fast_country ON sentiment(country)")
+#         c.execute("CREATE INDEX fast_date ON sentiment(tweet_date)")
+#         c.execute("CREATE INDEX fast_tweet ON sentiment(tweet)")
+#         c.execute("CREATE INDEX fast_sentiment ON sentiment(sentiment)")
+#         connection.commit()
+#     except Exception as e:
+#         print(str(e))
+#
+# create_table()
 
+
+engine = create_engine("postgresql://erugboqiaqbruv:{}@ec2-34-230-149-169.compute-1.amazonaws.com:5432/db72j9mubepavv".format(postgres_database_password), echo=False)
+df.to_sql('sentiment', con=engine)
+
+
+# # df = pd.read_csv('sentiment_df.csv')
+# engine = create_engine("postgresql://postgres:1985aYJL@localhost:5432/sql_tutorial", echo=False)
+# df.to_sql('sentiment', con=engine)

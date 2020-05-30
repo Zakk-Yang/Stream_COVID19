@@ -3,15 +3,11 @@ import streamlit as st
 import plotly.express as px
 import requests
 import io
-from bokeh.models.widgets import Div
 import pandas as pd
 import warnings
 import numpy as np
 import altair as alt
-
-
-
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
 
 
 
@@ -127,7 +123,7 @@ def main():
     # Render the readme as markdown using st.markdown.
     st.sidebar.title("Navigation")
     app_mode = st.sidebar.radio("Choose a section:",
-        ["Overview", "Country Comparison", "Racing Bar Chart"])
+        ["Overview", "Country Comparison", "Racing Bar Chart", "Sentiment Analysis"])
     if app_mode == "Overview":
         status_overview(df_)
         gen_stackedbar(df_)
@@ -139,6 +135,9 @@ def main():
         st.altair_chart(alt_area(df_), use_container_width=True)
     elif app_mode == "Racing Bar Chart":
         st.write(racing_bar(df_))
+    elif app_mode == 'Sentiment Analysis':
+        world_sentiment_bar()
+        tweet_table()
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)
     st.sidebar.markdown('''[🔗LinkedIn](https://www.linkedin.com/in/zakkyang/)'''
@@ -168,25 +167,6 @@ def status_overview(x):
     else:
         st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format((new_cases), increase_rate))
 
-
-# def status_overview(x):
-#     con1 = x.status == 'confirmed'
-#     con2 = x.date == latest_date
-#     dff = x.loc[con1 & con2]
-#     dff = dff.groupby('status')['count','Daily Case Change'].agg('sum').reset_index()
-#     yesterday = latest_date - timedelta(days=1)
-#     con1 = x.status == 'confirmed'
-#     con2 = x.date == yesterday
-#     dff_ = x.loc[con1 & con2]
-#     dff_ = dff_.groupby('status')['Daily Case Change'].agg('sum').reset_index()
-#     increase_rate = dff['Daily Case Change'].sum()/dff['count'].sum()
-#     new_cases = dff['Daily Case Change'].sum()
-#     total_confirmed = dff['count'].sum()
-#     st.write('Total Confirmed: {}'.format(round(total_confirmed)))
-#     if new_cases >0:
-#         st.write('Daily Increased New Cases: {}, ⬆ ️{:.2%}'.format(new_cases, increase_rate))
-#     else:
-#         st.write('Daily Increased New Cases: {}, ⬇ ️{:.2%}'.format(new_cases, increase_rate))
 
 
 
@@ -411,20 +391,39 @@ def racing_bar(df_):
     fig.update_layout(dragmode=False)
     return fig
 
-# if status_selector:
-#     with st.spinner('Loading...'):
-#         st.write(fig)
 
-#
-# if st.sidebar.checkbox("Show Raw Data"):
-#     st.header('Raw Data')
-#     con1 = df_['status'] == status_selector
-#     con2 = df_['date'] == pd.to_datetime(date_selector)
-#     data_source = df_.loc[con1 & con2].sort_values(by='date')
-#     data_source.date = pd.to_datetime(data_source.date, format='%Y%m%d')
-#     st.write(data_source)
-#
-#
+def world_sentiment_bar():
+    st.write('Note: the sentiment analysis is based on daily Twitter contents')
+    df = pd.read_csv('sentiment_df.csv')
+    country_sentiment =  df.groupby(['country', 'vader_sentiment']).agg({'name': 'count'})
+    sentiment_pcts = country_sentiment.groupby(level=0).apply(lambda x:
+                                                     round(100 * x / float(x.sum()))).reset_index()
+
+    sentiment_pcts.rename(columns = {'name': 'pct%'}, inplace=True)
+
+    domain = ['positive', 'negative', 'neutral']
+    range_ = ['#90EE90', '#DC143C', '#A9A9A9']
+
+    fig = alt.Chart(sentiment_pcts).mark_bar().encode(
+        x=alt.X('pct%'),
+        y='country',
+        color=alt.Color('vader_sentiment', scale=alt.Scale(domain=domain, range=range_),
+                        legend=alt.Legend(title="Sentiment", orient='right')),
+        tooltip=['country', 'vader_sentiment', 'pct%']).properties(
+        title='COVID Sentiment by Country')
+
+    return st.altair_chart(fig, use_container_width=True)
+
+def tweet_table():
+    df = pd.read_csv('sentiment_df.csv')
+    tweet_table = df.drop(df.columns[0], axis =1)
+    tweet_table.drop(['name', 'retweets', 'location', 'followers', 'is_user_verified'], axis =1, inplace=True)
+    if st.button('View Tweets'):
+        st.table(tweet_table)
+
+
+
+
 # layout customization
 def _set_block_container_style(
         max_width: int = 1200,

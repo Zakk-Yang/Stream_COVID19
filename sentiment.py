@@ -3,8 +3,6 @@ import tweepy
 import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sqlalchemy import create_engine
-import psycopg2 as pg
-import pandas.io.sql as psql
 
 
 customer_key = os.environ['customer_key']
@@ -129,10 +127,14 @@ df['vader_sentiment'] = df['tweet'].apply(vader_sentiment_calc)
 # create_table()
 
 
-engine = create_engine("postgresql://erugboqiaqbruv:{}@ec2-34-230-149-169.compute-1.amazonaws.com:5432/db72j9mubepavv".format(postgres_database_password), echo=False)
-df.to_sql('sentiment', con=engine)
+# engine = create_engine("postgresql://erugboqiaqbruv:{}@ec2-34-230-149-169.compute-1.amazonaws.com:5432/db72j9mubepavv".format(postgres_database_password), echo=False)
+# df.to_sql('sentiment', con=engine)
 
 
 # # df = pd.read_csv('sentiment_df.csv')
 # engine = create_engine("postgresql://postgres:1985aYJL@localhost:5432/sql_tutorial", echo=False)
 # df.to_sql('sentiment', con=engine)
+URI = os.environ['URI']
+engine = create_engine(URI)
+df.to_sql('sentiment', con=engine)
+

@@ -70,11 +70,11 @@ def load_data(url1, url2, url3):
         new_df['Daily Case Change'] = new_df.groupby(['country', 'status'])['count'].transform(lambda x: x.diff())
 
         # import population data
-        world_pop = pd.read_csv('../world_population.csv')
+        world_pop = pd.read_csv('world_population.csv')
         new_df = pd.merge(new_df, world_pop, how='left', left_on='iso_alpha', right_on='Country Code')
 
         # import china population and calculate the per million number
-        china_pop = pd.read_csv('../china_population.csv')
+        china_pop = pd.read_csv('china_population.csv')
         new_df.country = new_df.country.str.replace('China-', '').str.strip()
         new_df = pd.merge(new_df, china_pop, how='left', left_on='country', right_on='province')
         new_df.population_y = new_df.population_y.fillna(new_df.population_x)

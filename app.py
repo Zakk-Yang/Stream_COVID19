@@ -415,7 +415,7 @@ def world_sentiment_bar():
     return st.altair_chart(fig, use_container_width=True)
 
 def tweet_table():
-    df = pd.read_csv('../sentiment_df.csv')
+    df = pd.read_csv('sentiment_df.csv')
     tweet_table = df.drop(df.columns[0], axis =1)
     tweet_table.drop(['name', 'retweets', 'location', 'followers', 'is_user_verified'], axis =1, inplace=True)
     if st.button('View Tweets'):

@@ -394,7 +394,7 @@ def racing_bar(df_):
 
 def world_sentiment_bar():
     st.write('Note: the sentiment analysis is based on daily Twitter contents')
-    df = pd.read_csv('../sentiment_df.csv')
+    df = pd.read_csv('sentiment_df.csv')
     country_sentiment =  df.groupby(['country', 'vader_sentiment']).agg({'name': 'count'})
     sentiment_pcts = country_sentiment.groupby(level=0).apply(lambda x:
                                                      round(100 * x / float(x.sum()))).reset_index()

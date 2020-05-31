@@ -16,11 +16,10 @@ postgres_database_password = os.environ['postgres_password']
 
 auth = tweepy.OAuthHandler(customer_key, customer_secret)
 auth.set_access_token(access_token, access_secret)
-api = tweepy.API(auth, wait_on_rate_limit=False)
+api = tweepy.API(auth, wait_on_rate_limit=True)
 
-
-#Create a connection credentials to the PostgreSQL database
-
+search_term = 'covid'
+retrieve_num = 800
 
 def stream_tweets(search_term, location, retreive_num):
     '''
@@ -35,7 +34,7 @@ def stream_tweets(search_term, location, retreive_num):
             place_id = x.id
 
     for tweet in tweepy.Cursor(api.search,
-                               q=('{} AND place:{}'.format(search_term, place_id)),
+                               q=('{} -filter:retweets AND place:{} '.format(search_term, place_id)),
                                count=retreive_num, lang='en', tweet_mode='extended').items():
         tweet_details = {}
         tweet_details['name'] = tweet.user.screen_name
@@ -53,40 +52,25 @@ def stream_tweets(search_term, location, retreive_num):
             break
         else:
             pass
-    return data
+    return pd.DataFrame(data)
 
 
-def get_world_sentiment_df(search_terms, retreive_num):
-    location = 'United Kingdom'
-    for search_term in search_terms:
-        uk = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+location = 'United Kingdom'
+uk = pd.DataFrame(stream_tweets(search_term, location, retrieve_num))
 
-    location = 'United States'
-    for search_term in search_terms:
-        us = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+location = 'United States'
+us = pd.DataFrame(stream_tweets(search_term, location, retrieve_num))
 
-    location = 'Brazil'
-    for search_term in search_terms:
-        brazil = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+location = 'Brazil'
+brazil = pd.DataFrame(stream_tweets(search_term, location, retrieve_num))
 
-    # location = 'Italy'
-    # for search_term in search_terms:
-    #     italy = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
-    #
-    # location = 'Spain'
-    # for search_term in search_terms:
-    #     spain = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+location = 'Italy'
+italy = pd.DataFrame(stream_tweets(search_term, location, retrieve_num))
 
-    # location = 'France'
-    # for search_term in search_terms:
-    #     france = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+location = 'Spain'
+spain = pd.DataFrame(stream_tweets(search_term, location, retrieve_num))
 
-    df = pd.concat([uk, us, brazil], axis=0)
-    return df
-
-
-df = get_world_sentiment_df('covid', 300)
-
+df = pd.concat([uk, us, brazil, italy, spain], axis=0)
 
 def vader_sentiment_calc(tweet):
     try:

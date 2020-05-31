@@ -69,23 +69,23 @@ def get_world_sentiment_df(search_terms, retreive_num):
     for search_term in search_terms:
         brazil = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
 
-    location = 'Italy'
-    for search_term in search_terms:
-        italy = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+    # location = 'Italy'
+    # for search_term in search_terms:
+    #     italy = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+    #
+    # location = 'Spain'
+    # for search_term in search_terms:
+    #     spain = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
 
-    location = 'Spain'
-    for search_term in search_terms:
-        spain = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
+    # location = 'France'
+    # for search_term in search_terms:
+    #     france = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
 
-    location = 'France'
-    for search_term in search_terms:
-        france = pd.DataFrame(stream_tweets(search_term, location, retreive_num))
-
-    df = pd.concat([uk, us, brazil, italy, spain, france], axis=0)
+    df = pd.concat([uk, us, brazil], axis=0)
     return df
 
 
-df = get_world_sentiment_df('covid', 100)
+df = get_world_sentiment_df('covid', 300)
 
 
 def vader_sentiment_calc(tweet):
@@ -127,12 +127,7 @@ df['vader_sentiment'] = df['tweet'].apply(vader_sentiment_calc)
 # create_table()
 
 
-# engine = create_engine("postgresql://erugboqiaqbruv:{}@ec2-34-230-149-169.compute-1.amazonaws.com:5432/db72j9mubepavv".format(postgres_database_password), echo=False)
-# df.to_sql('sentiment', con=engine)
 
-
-# # df = pd.read_csv('sentiment_df.csv')
-# engine = create_engine("postgresql://postgres:1985aYJL@localhost:5432/sql_tutorial", echo=False)
 # df.to_sql('sentiment', con=engine)
 URI = os.environ['URI']
 engine = create_engine(URI)

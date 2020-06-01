@@ -115,5 +115,5 @@ df['vader_sentiment'] = df['tweet'].apply(vader_sentiment_calc)
 # df.to_sql('sentiment', con=engine)
 URI = os.environ['URI']
 engine = create_engine(URI)
-df.to_sql('sentiment', con=engine)
+df.to_sql('sentiment', con=engine, if_exists= 'replace')
 

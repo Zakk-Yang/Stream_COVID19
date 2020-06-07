@@ -20,7 +20,7 @@ auth.set_access_token(access_token, access_secret)
 api = tweepy.API(auth, wait_on_rate_limit=True)
 
 search_term = 'covid'
-retrieve_num = 800
+retrieve_num = 400
 
 def stream_tweets(search_term, location, retreive_num):
     '''

@@ -104,7 +104,7 @@ def hash_tag_plot(hash_tag_table, title):
     # selecting top 10 most frequent hashtags
     d = hash_tag_table.nlargest(columns="Count", n=10)
     plt.figure(figsize = (20,5))
-    sns.set(font_scale=1.2)
+    sns.set(font_scale=1.1)
     ax = sns.barplot(data=d, x="Hashtag", y="Count")
     plt.title(title)
     ax.set(ylabel='Count')

@@ -3,7 +3,8 @@ import tweepy
 import pandas as pd
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from sqlalchemy import create_engine
-
+import numpy as np
+import re
 
 customer_key = os.environ['customer_key']
 customer_secret = os.environ['customer_secret']
@@ -72,6 +73,29 @@ spain = pd.DataFrame(stream_tweets(search_term, location, retrieve_num))
 
 df = pd.concat([uk, us, brazil, italy, spain], axis=0)
 
+
+def remove_pattern(input_txt, pattern):
+    r = re.findall(pattern, input_txt)
+    for i in r:
+        input_txt = re.sub(i, '', input_txt)
+
+    return input_txt
+
+
+def vader_clean_text(text):
+    # remove twitter Return handles (RT @xxx:)
+    text = np.vectorize(remove_pattern)(text, "RT @[\w]*:")
+
+    # remove twitter handles (@xxx)
+    text = np.vectorize(remove_pattern)(text, "@[\w]*")
+
+    # remove URL links (httpxxx)
+    text = np.vectorize(remove_pattern)(text, "https?://[A-Za-z0-9./]*")
+
+    # remove special characters, numbers, punctuations (except for #)
+    text = np.core.defchararray.replace(text, "[^a-zA-Z]", " ")
+    return text
+
 def vader_sentiment_calc(tweet):
     try:
         analyser = SentimentIntensityAnalyzer()
@@ -85,6 +109,7 @@ def vader_sentiment_calc(tweet):
     except:
         return None
 
+df['tweet'] = df['tweet'].apply(lambda x: vader_clean_text(x))
 df['vader_sentiment'] = df['tweet'].apply(vader_sentiment_calc)
 
 # df.to_csv('sentiment_df.csv')

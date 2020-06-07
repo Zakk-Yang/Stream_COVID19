@@ -92,7 +92,7 @@ def hash_tag_plot(hash_tag_table, title):
     plt.title(title)
     ax.set(ylabel='Count')
 
-    return st.pyplot(ax)
+    return st.pyplot()
 
 
 

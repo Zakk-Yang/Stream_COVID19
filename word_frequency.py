@@ -40,17 +40,18 @@ def list_to_string(df, text_column):
 
 
 def word_cloud(df, text_column, additional_stop_words=None):
-    all_words = ' '.join([text for text in df[text_column]])
+    all_words = ' '.join([x for x in df[text_column]])
     add_stop_words = [word for word, count in Counter(all_words).most_common() if count > 100]
     add_stop_words.extend(additional_stop_words)
     stop_words = text.ENGLISH_STOP_WORDS.union(add_stop_words)
     plt.figure(figsize=(10, 7))
-    plt.imshow(wordcloud, interpolation="bilinear")
     plt.axis('off')
     wordcloud = WordCloud(stopwords=stop_words, width=800,
                           height=500, random_state=21, max_font_size=110,
                           background_color='white',
                           ).generate(all_words)
+    plt.imshow(wordcloud, interpolation="bilinear")
+
     return wordcloud
 
 # function to collect all hashtags

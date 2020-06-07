@@ -10,6 +10,7 @@ import altair as alt
 warnings.filterwarnings("ignore")
 import os
 from sqlalchemy import create_engine
+import word_frequency as wf
 import psycopg2 as pg
 import pandas.io.sql as psql
 
@@ -140,6 +141,8 @@ def main():
         st.write(racing_bar(df_))
     elif app_mode == 'Sentiment Analysis':
         world_sentiment_bar(twitter_db)
+        update_word_cloud(twitter_db)
+        tag_frequency(twitter_db)
         tweet_table(twitter_db)
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)
@@ -394,37 +397,7 @@ def racing_bar(df_):
     fig.update_layout(dragmode=False)
     return fig
 
-
-# def world_sentiment_bar():
-#     st.write('Note: the sentiment analysis is based on daily Twitter contents')
-#     df = pd.read_csv('sentiment_df.csv')
-#     country_sentiment =  df.groupby(['country', 'vader_sentiment']).agg({'name': 'count'})
-#     sentiment_pcts = country_sentiment.groupby(level=0).apply(lambda x:
-#                                                      round(100 * x / float(x.sum()))).reset_index()
-#
-#     sentiment_pcts.rename(columns = {'name': 'pct%'}, inplace=True)
-#
-#     domain = ['positive', 'negative', 'neutral']
-#     range_ = ['#90EE90', '#DC143C', '#A9A9A9']
-#
-#     fig = alt.Chart(sentiment_pcts).mark_bar().encode(
-#         x=alt.X('pct%'),
-#         y='country',
-#         color=alt.Color('vader_sentiment', scale=alt.Scale(domain=domain, range=range_),
-#                         legend=alt.Legend(title="Sentiment", orient='right')),
-#         tooltip=['country', 'vader_sentiment', 'pct%']).properties(
-#         title='COVID Sentiment by Country')
-#
-#     return st.altair_chart(fig, use_container_width=True)
-#
-# def tweet_table():
-#     df = pd.read_csv('sentiment_df.csv')
-#     tweet_table = df.drop(df.columns[0], axis =1)
-#     tweet_table.drop(['name', 'retweets', 'location', 'followers', 'is_user_verified'], axis =1, inplace=True)
-#     if st.button('View Tweets'):
-#         st.table(tweet_table)
-
-
+@st.cache
 def get_db():
     URI = os.environ['URI']
     engine = create_engine(URI)
@@ -457,6 +430,34 @@ def world_sentiment_bar(df):
         title='COVID Sentiment by Country')
 
     return st.altair_chart(fig, use_container_width=True)
+
+
+def update_word_cloud(df):
+    # step 1: clean the text
+    df['tidy_tweet'] = df['tweet'].apply(lambda x: wf.clean_text(x))
+
+    # step 2: tokenization and stemming
+    df['tidy_tweet'] = df['tidy_tweet'].apply(lambda x: wf.token_stem(x))
+
+    # step 3: remove the brackets
+    df['tidy_tweet'] = wf.list_to_string(df, 'tidy_tweet')
+
+    # step 4: plot the word cloud
+    positive = df[df['vader_sentiment'] == 'positive']
+    negative = df[df['vader_sentiment'] == 'negative']
+
+    st.header('Positive Word Cloud')
+    st.write(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid']))
+
+    st.header('Negative Word Cloud')
+    st.write(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
+
+
+def tag_frequency(df):
+    for x in list(df.country.unique()):
+        a = df[df.country == x]
+        st.write(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))
+
 
 def tweet_table(df):
     tweet_table = df.drop(df.columns[0], axis =1)

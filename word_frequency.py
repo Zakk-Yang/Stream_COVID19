@@ -44,15 +44,14 @@ def word_cloud(df, text_column, additional_stop_words=None):
     add_stop_words = [word for word, count in Counter(all_words).most_common() if count > 100]
     add_stop_words.extend(additional_stop_words)
     stop_words = text.ENGLISH_STOP_WORDS.union(add_stop_words)
+    plt.figure(figsize=(10, 7))
+    plt.imshow(wordcloud, interpolation="bilinear")
+    plt.axis('off')
     wordcloud = WordCloud(stopwords=stop_words, width=800,
                           height=500, random_state=21, max_font_size=110,
                           background_color='white',
                           ).generate(all_words)
-    plt.figure(figsize=(10, 7))
-    plt.imshow(wordcloud, interpolation="bilinear")
-    plt.axis('off')
-    plt.show()
-
+    return wordcloud
 
 # function to collect all hashtags
 def hashtag_extract(x):

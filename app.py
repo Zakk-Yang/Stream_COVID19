@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 import os
 from sqlalchemy import create_engine
 import word_frequency as wf
-
+import re
 postgres_database_password = os.environ['postgres_password']
 # ---------------------------reading data----------------------------------------------------
 @st.cache(allow_output_mutation=True)
@@ -401,6 +401,29 @@ def racing_bar(df_):
     fig.update_layout(dragmode=False)
     return fig
 
+
+def remove_pattern(input_txt, pattern):
+    r = re.findall(pattern, input_txt)
+    for i in r:
+        input_txt = re.sub(i, '', input_txt)
+    return input_txt
+
+
+def clean_tweets(tweets):
+    # remove twitter Return handles (RT @xxx:)
+    tweets = np.vectorize(remove_pattern)(tweets, "RT @[\w]*:")
+
+    # remove twitter handles (@xxx)
+    tweets = np.vectorize(remove_pattern)(tweets, "@[\w]*")
+
+    # remove URL links (httpxxx)
+    tweets = np.vectorize(remove_pattern)(tweets, "https?://[A-Za-z0-9./]*")
+
+    # remove special characters, numbers, punctuations (except for #)
+    tweets = np.core.defchararray.replace(tweets, "[^a-zA-Z]", " ")
+
+    return tweets
+
 @st.cache(allow_output_mutation=True)
 def get_db():
     URI = os.environ['URI']
@@ -413,6 +436,7 @@ def get_db():
     return df
 
 twitter_db = get_db()
+twitter_db['tweet'] = twitter_db['tweet'].apply(lambda x: clean_tweets(x))
 
 def world_sentiment_bar(df):
     st.write('Note: the sentiment analysis is based on daily Twitter contents')

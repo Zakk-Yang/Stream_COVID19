@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
 from sklearn.feature_extraction import text
 import pandas as pd
+import streamlit as st
 
 
 
@@ -51,8 +52,8 @@ def word_cloud(df, text_column, additional_stop_words=None):
                           background_color='white',
                           ).generate(all_words)
     plt.imshow(wordcloud, interpolation="bilinear")
-
-    return wordcloud
+    plt.show()
+    return st.pyplot()
 
 # function to collect all hashtags
 def hashtag_extract(x):
@@ -91,7 +92,7 @@ def hash_tag_plot(hash_tag_table, title):
     plt.title(title)
     ax.set(ylabel='Count')
 
-    return ax
+    return st.pyplot(ax)
 
 
 

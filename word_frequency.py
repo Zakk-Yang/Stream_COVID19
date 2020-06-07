@@ -86,7 +86,7 @@ def hashtag_extract(x):
     return hashtags
 
 
-def hash_tag_table(df, text_column, exclude_list):
+def hash_tag_plot(df, text_column, exclude_list, title):
     tag_list = hashtag_extract(df[text_column])
     for x in tag_list:
         if x in exclude_list:
@@ -98,11 +98,8 @@ def hash_tag_table(df, text_column, exclude_list):
     d.Hashtag = d.Hashtag.str.strip()
     d.dropna(how='any', inplace=True)
     d.sort_values(by='Count', ascending=False, inplace=True)
-    return d
-#
-def hash_tag_plot(hash_tag_table, title):
     # selecting top 10 most frequent hashtags
-    d = hash_tag_table.nlargest(columns="Count", n=10)
+    d = d.nlargest(columns="Count", n=10)
     plt.figure(figsize = (20,5))
     sns.set(font_scale=1.1)
     ax = sns.barplot(data=d, x="Hashtag", y="Count")

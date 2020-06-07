@@ -141,7 +141,10 @@ def main():
         st.write(racing_bar(df_))
     elif app_mode == 'Sentiment Analysis':
         world_sentiment_bar(twitter_db)
+        st.header('Positive Word Cloud')
         wf.word_cloud(positive, 'tidy_tweet',additional_stop_words = ['covid'])
+        st.header('Negative Word Cloud')
+        wf.word_cloud(nagative, 'tidy_tweet',additional_stop_words = ['covid'])
         for x in list(twitter_db.country.unique()):
             a = twitter_db[twitter_db.country == x]
             return(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))

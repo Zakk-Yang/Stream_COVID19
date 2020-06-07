@@ -12,6 +12,7 @@ import os
 from sqlalchemy import create_engine
 import word_frequency as wf
 import re
+import string
 postgres_database_password = os.environ['postgres_password']
 # ---------------------------reading data----------------------------------------------------
 @st.cache(allow_output_mutation=True)
@@ -412,20 +413,18 @@ def remove_pattern(input_txt, pattern):
     return input_txt
 
 
-def clean_tweets(tweets):
-    # remove twitter Return handles (RT @xxx:)
-    tweets = np.vectorize(remove_pattern)(tweets, "RT @[\w]*:")
+def clean_text(text):
+    '''Make text lowercase, remove text in square brackets, remove punctuation and remove words containing numbers.'''
+    text = text.lower()
+    text = re.sub('\[.*?\]', '', text)
+    text = re.sub('[%s]' % re.escape(string.punctuation), '', text)
+    text = re.sub('\w*\d\w*', '', text)
+    '''Get rid of some additional punctuation and non-sensical text that was missed the first time around.'''
+    text = re.sub('[‘’“”…]', '', text)
+    text = re.sub('\n', '', text)
+    text = re.sub(r'\b\w{1,3}\b', '', text) #remove any words that is less than 3
 
-    # remove twitter handles (@xxx)
-    tweets = np.vectorize(remove_pattern)(tweets, "@[\w]*")
-
-    # remove URL links (httpxxx)
-    tweets = np.vectorize(remove_pattern)(tweets, "https?://[A-Za-z0-9./]*")
-
-    # remove special characters, numbers, punctuations (except for #)
-    tweets = np.core.defchararray.replace(tweets, "[^a-zA-Z]", " ")
-
-    return tweets
+    return text
 
 @st.cache(allow_output_mutation=True)
 def get_db():

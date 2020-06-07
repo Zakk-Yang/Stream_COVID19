@@ -150,7 +150,7 @@ def main():
         st.header('Hash Tag Frequency')
         for x in list(twitter_db.country.unique()):
             a = twitter_db[twitter_db.country == x]
-            wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x)
+            wf.hash_tag_plot(a, 'tweet', exclude_list=['covid', 'coronavirus'], title=x)
         tweet_table(twitter_db)
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)
@@ -423,7 +423,6 @@ def clean_text(text):
     text = re.sub('[‘’“”…]', '', text)
     text = re.sub('\n', '', text)
     text = re.sub(r'\b\w{1,3}\b', '', text) #remove any words that is less than 3
-
     return text
 
 @st.cache(allow_output_mutation=True)

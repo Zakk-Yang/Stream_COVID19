@@ -446,18 +446,16 @@ def update_word_cloud(df):
     positive = df[df['vader_sentiment'] == 'positive']
     negative = df[df['vader_sentiment'] == 'negative']
 
-    st.header('Positive Word Cloud (All Countries)')
-    st.write(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid']))
-
-    st.header('Negative Word Cloud (All Countries)')
-    st.write(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
+    st.header('Positive and Negative Word Cloud (All Countries)')
+    return st.write(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid'])),\
+           st.write(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
 
 
 def tag_frequency(df):
     st.header('Tag Frequency by Country')
     for x in list(df.country.unique()):
         a = df[df.country == x]
-        st.write(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))
+        return st.write(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))
 
 
 def tweet_table(df):

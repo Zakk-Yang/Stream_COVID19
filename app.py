@@ -142,7 +142,7 @@ def main():
     elif app_mode == 'Sentiment Analysis':
         world_sentiment_bar(twitter_db)
         update_word_cloud(twitter_db)
-        tag_frequency(twitter_db)
+        tag_frequency_bar(twitter_db)
         tweet_table(twitter_db)
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)
@@ -447,18 +447,18 @@ def update_word_cloud(df):
     negative = df[df['vader_sentiment'] == 'negative']
 
     st.header('Positive Word Cloud (All Countries)')
-    st.write(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid']))
+    st.pyplot(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid']))
 
     st.header('Negative Word Cloud (All Countries)')
-    st.write(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
+    st.pyplot(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
 
 
-def tag_frequency(df):
+def tag_frequency_bar(df):
     st.header('Tag Frequency by Country')
     for x in list(df.country.unique()):
         a = df[df.country == x]
-        wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x)
-        return st.pyplot()
+        fig = wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x)
+        return st.pyplot(fig)
 
 def tweet_table(df):
     tweet_table = df.drop(df.columns[0], axis =1)

@@ -11,8 +11,6 @@ warnings.filterwarnings("ignore")
 import os
 from sqlalchemy import create_engine
 import word_frequency as wf
-import psycopg2 as pg
-import pandas.io.sql as psql
 
 postgres_database_password = os.environ['postgres_password']
 # ---------------------------reading data----------------------------------------------------
@@ -453,12 +451,6 @@ def update_word_cloud_df(df):
 
 positive, nagative = update_word_cloud_df(twitter_db)
 
-def tag_frequency_bar(df):
-    st.header('Tag Frequency by Country')
-    for x in list(df.country.unique()):
-        a = df[df.country == x]
-        fig = wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x)
-        return st.pyplot(fig)
 
 def tweet_table(df):
     tweet_table = df.drop(df.columns[0], axis =1)

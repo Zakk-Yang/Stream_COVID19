@@ -457,8 +457,8 @@ def tag_frequency(df):
     st.header('Tag Frequency by Country')
     for x in list(df.country.unique()):
         a = df[df.country == x]
-        return st.write(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))
-
+        wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x)
+        return st.pyplot()
 
 def tweet_table(df):
     tweet_table = df.drop(df.columns[0], axis =1)

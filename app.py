@@ -397,7 +397,7 @@ def racing_bar(df_):
     fig.update_layout(dragmode=False)
     return fig
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def get_db():
     URI = os.environ['URI']
     engine = create_engine(URI)
@@ -446,9 +446,11 @@ def update_word_cloud(df):
     positive = df[df['vader_sentiment'] == 'positive']
     negative = df[df['vader_sentiment'] == 'negative']
 
-    st.header('Positive and Negative Word Cloud (All Countries)')
-    return st.write(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid'])),\
-           st.write(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
+    st.header('Positive Word Cloud (All Countries)')
+    st.write(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid']))
+
+    st.header('Negative Word Cloud (All Countries)')
+    st.write(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
 
 
 def tag_frequency(df):

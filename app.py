@@ -139,14 +139,14 @@ def main():
         st.write(racing_bar(df_))
     elif app_mode == 'Sentiment Analysis':
         world_sentiment_bar(twitter_db)
-        st.header('Positive Word Cloud')
+        st.header('Positive Word Cloud (All Countries)')
         wf.word_cloud(positive, 'tidy_tweet',additional_stop_words = ['covid'])
-        st.header('Negative Word Cloud')
+        st.header('Negative Word Cloud (All Countries)')
         wf.word_cloud(nagative, 'tidy_tweet',additional_stop_words = ['covid'])
+        st.header('Hash Tag Frequency')
         for x in list(twitter_db.country.unique()):
             a = twitter_db[twitter_db.country == x]
-            return(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))
-
+            wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x)
         tweet_table(twitter_db)
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)

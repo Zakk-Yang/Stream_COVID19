@@ -141,8 +141,11 @@ def main():
         st.write(racing_bar(df_))
     elif app_mode == 'Sentiment Analysis':
         world_sentiment_bar(twitter_db)
-        update_word_cloud(twitter_db)
-        tag_frequency_bar(twitter_db)
+        wf.word_cloud(positive, 'tidy_tweet',additional_stop_words = ['covid'])
+        for x in list(twitter_db.country.unique()):
+            a = twitter_db[twitter_db.country == x]
+            return(wf.hash_tag_plot(wf.hash_tag_table(a, 'tweet', exclude_list=['covid', 'coronavirus']), title=x))
+
         tweet_table(twitter_db)
     st.sidebar.markdown('''[🔗Raw data used in this project](https://data.humdata.org/dataset/novel-coronavirus-2019-ncov-cases/)'''
                                    ,unsafe_allow_html=True)
@@ -432,7 +435,7 @@ def world_sentiment_bar(df):
     return st.altair_chart(fig, use_container_width=True)
 
 
-def update_word_cloud(df):
+def update_word_cloud_df(df):
     # step 1: clean the text
     df['tidy_tweet'] = df['tweet'].apply(lambda x: wf.clean_text(x))
 
@@ -443,15 +446,9 @@ def update_word_cloud(df):
     df['tidy_tweet'] = wf.list_to_string(df, 'tidy_tweet')
 
     # step 4: plot the word cloud
-    positive = df[df['vader_sentiment'] == 'positive']
-    negative = df[df['vader_sentiment'] == 'negative']
+    return df[df['vader_sentiment'] == 'positive'], df[df['vader_sentiment'] == 'negative']
 
-    st.header('Positive Word Cloud (All Countries)')
-    st.pyplot(wf.word_cloud(positive, 'tidy_tweet', additional_stop_words = ['covid']))
-
-    st.header('Negative Word Cloud (All Countries)')
-    st.pyplot(wf.word_cloud(negative, 'tidy_tweet', additional_stop_words = ['covid']))
-
+positive, nagative = update_word_cloud_df(twitter_db)
 
 def tag_frequency_bar(df):
     st.header('Tag Frequency by Country')

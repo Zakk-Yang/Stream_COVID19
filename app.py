@@ -138,8 +138,11 @@ def main():
     elif app_mode == "Racing Bar Chart":
         st.write(racing_bar(df_))
     elif app_mode == 'Sentiment Analysis':
+        twitter_db = get_db()
+        twitter_db['tidy_tweet'] = twitter_db['tweet'].apply(lambda x: wf.clean_text(x))
         world_sentiment_bar(twitter_db)
         st.header('Positive Word Cloud (All Countries)')
+        positive, nagative = update_word_cloud_df(twitter_db)
         wf.word_cloud(positive, 'tidy_tweet',additional_stop_words = ['covid'])
         st.header('Negative Word Cloud (All Countries)')
         wf.word_cloud(nagative, 'tidy_tweet',additional_stop_words = ['covid'])
@@ -435,8 +438,7 @@ def get_db():
     df = pd.read_sql_query(sql, con=engine)
     return df
 
-twitter_db = get_db()
-twitter_db['tweet'] = twitter_db['tweet'].apply(lambda x: clean_tweets(x))
+
 
 def world_sentiment_bar(df):
     st.write('Note: the sentiment analysis is based on daily Twitter contents')
@@ -473,7 +475,6 @@ def update_word_cloud_df(df):
     # step 4: plot the word cloud
     return df[df['vader_sentiment'] == 'positive'], df[df['vader_sentiment'] == 'negative']
 
-positive, nagative = update_word_cloud_df(twitter_db)
 
 
 def tweet_table(df):

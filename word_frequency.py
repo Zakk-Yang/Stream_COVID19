@@ -6,6 +6,8 @@ from wordcloud import WordCloud
 import seaborn as sns
 import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
+from sklearn.feature_extraction import text
+import pandas as pd
 
 
 

@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction import text
 import pandas as pd
 import streamlit as st
+plt.style.use('fivethirtyeight')
 
 
 
@@ -90,7 +91,7 @@ def hash_tag_plot(hash_tag_table, title):
     ax = sns.barplot(data=d, x="Hashtag", y="Count")
     plt.title(title)
     ax.set(ylabel='Count')
-
+    plt.show()
     return st.pyplot()
 
 

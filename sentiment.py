@@ -96,7 +96,7 @@ def vader_clean_text(text):
     text = np.core.defchararray.replace(text, "[^a-zA-Z]", " ")
     return text
 
-def vader_sentiment_calc(tweet):
+def rough_vader_sentiment_calc(tweet):
     try:
         analyser = SentimentIntensityAnalyzer()
         analysis = analyser.polarity_scores(tweet)
@@ -110,7 +110,7 @@ def vader_sentiment_calc(tweet):
         return None
 
 df['tweet'] = df['tweet'].apply(lambda x: vader_clean_text(x))
-df['vader_sentiment'] = df['tweet'].apply(vader_sentiment_calc)
+df['vader_sentiment'] = df['tweet'].apply(rough_vader_sentiment_calc)
 
 # df.to_csv('sentiment_df.csv')
 #

@@ -8,7 +8,14 @@ import matplotlib.pyplot as plt
 from sklearn.feature_extraction import text
 import pandas as pd
 import streamlit as st
+import numpy as np
 
+def remove_pattern(input_txt, pattern):
+    r = re.findall(pattern, input_txt)
+    for i in r:
+        input_txt = re.sub(i, '', input_txt)
+
+    return input_txt
 
 
 def clean_text(text):
@@ -20,7 +27,18 @@ def clean_text(text):
     '''Get rid of some additional punctuation and non-sensical text that was missed the first time around.'''
     text = re.sub('[‘’“”…]', '', text)
     text = re.sub('\n', '', text)
-    text = re.sub(r'\b\w{1,3}\b', '', text)  # remove any words that is less than 3
+    text = re.sub(r'\b\w{1,3}\b', '', text) #remove any words that is less than 3
+    # remove twitter Return handles (RT @xxx:)
+    text = np.vectorize(remove_pattern)(text, "RT @[\w]*:")
+
+    # remove twitter handles (@xxx)
+    text = np.vectorize(remove_pattern)(text, "@[\w]*")
+
+    # remove URL links (httpxxx)
+    text = np.vectorize(remove_pattern)(text, "https?://[A-Za-z0-9./]*")
+
+    # remove special characters, numbers, punctuations (except for #)
+    text = np.core.defchararray.replace(text, "[^a-zA-Z]", " ")
     return text
 
 

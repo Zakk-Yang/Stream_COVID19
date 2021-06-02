@@ -91,7 +91,7 @@ traitlets==4.3.3
 tweepy==3.8.0
 typing-extensions==3.7.4.2
 tzlocal==2.0.0
-urllib3==1.25.9
+urllib3==1.26.5
 vaderSentiment==3.3.2
 validators==0.14.3
 watchdog==0.10.2
